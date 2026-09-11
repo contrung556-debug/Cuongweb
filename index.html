@@ -3,182 +3,164 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Shopee Link Fetccher & Order Manager</title>
+    <title>Hệ Thống Lấy Link Xác Thực Shopee</title>
     <style>
-        :root { --shopee-orange: #ff4500; --bg-gray: #f6f6f6; }
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: var(--bg-gray); margin: 0; padding: 15px; color: #333; }
-        .wrapper { max-width: 500px; margin: 0 auto; }
-        .card { background: white; border-radius: 14px; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.04); margin-bottom: 20px; box-sizing: border-box; text-align: center; }
-        h2 { margin-top: 0; color: var(--shopee-orange); font-size: 20px; font-weight: 700; margin-bottom: 15px; text-transform: uppercase; }
-        .input-group { text-align: left; margin-bottom: 12px; }
-        label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 5px; color: #555; }
-        input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 15px; outline: none; transition: 0.2s; }
-        input:focus { border-color: var(--shopee-orange); }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f6f6f6; margin: 0; padding: 15px; display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 90vh; }
+        .container { background: white; padding: 25px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); width: 100%; max-width: 450px; box-sizing: border-box; margin-bottom: 20px; }
+        h2 { color: #ee4d2d; text-align: center; margin-top: 0; font-size: 22px; margin-bottom: 20px; text-transform: uppercase; }
+        label { font-weight: 600; display: block; margin-bottom: 8px; color: #333; font-size: 15px; }
+        .input-group { position: relative; margin-bottom: 20px; display: flex; align-items: center; width: 100%; }
+        input[type="text"], input[type="email"] { width: 100%; padding: 14px; border: 1.5px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; transition: border 0.3s; -webkit-appearance: none; }
+        input[type="text"]:focus, input[type="email"]:focus { border-color: #ee4d2d; outline: none; }
+        button { width: 100%; padding: 14px; background-color: #ee4d2d; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; transition: background 0.3s; -webkit-appearance: none; }
+        button:active { background-color: #d73c1f; }
+        button:disabled { background-color: #ccc; cursor: not-allowed; }
+        .result-box { margin-top: 25px; padding: 15px; border-radius: 8px; background-color: #fafafa; border: 1px solid #e6e6e6; display: none; box-sizing: border-box; }
+        .status-success { border-left: 5px solid #2ecc71; }
+        .status-error { border-left: 5px solid #e74c3c; }
+        .status-loading { border-left: 5px solid #3498db; text-align: center; color: #666; font-weight: 500; }
+        .data-item { margin-bottom: 12px; font-size: 15px; word-break: break-all; color: #444; text-align: left; }
+        .data-label { font-weight: bold; color: #666; }
         
-        .btn { width: 100%; padding: 12px; border: none; border-radius: 8px; font-size: 15px; font-weight: bold; cursor: pointer; transition: 0.2s; text-transform: uppercase; color: white; margin-bottom: 8px; }
-        .btn-orange { background: var(--shopee-orange); }
-        .btn-orange:active { background: #e03d00; }
-        .btn-green { background: #2ecc71; }
-        .btn-blue { background: #3498db; }
-        
-        /* Kết quả OTP */
-        .result-box { margin-top: 15px; border-left: 4px solid #2ecc71; padding: 12px; background: #fafafa; text-align: left; border-radius: 0 8px 8px 0; font-size: 14px; }
-        .result-item { margin-bottom: 6px; }
-        .bold-val { font-weight: bold; color: #111; word-break: break-all; }
-        .otp-display { font-size: 24px; font-weight: bold; color: var(--shopee-orange); letter-spacing: 1px; margin: 5px 0; }
-        
-        /* Danh sách đơn hàng */
+        .action-buttons { display: flex; gap: 10px; margin-top: 15px; flex-wrap: wrap; }
+        .verify-btn { flex: 2; display: block; text-align: center; padding: 12px; background-color: #2ecc71; color: white; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px; box-sizing: border-box; -webkit-appearance: none; min-width: 120px; }
+        .verify-btn:active { background-color: #27ae60; }
+        .copy-btn { flex: 1; padding: 12px; background-color: #3498db; color: white; border: none; border-radius: 8px; font-size: 15px; font-weight: bold; cursor: pointer; -webkit-appearance: none; min-width: 100px; }
+        .copy-btn:active { background-color: #2980b9; }
+        .copy-otp-btn { flex: 1; padding: 12px; background-color: #e67e22; color: white; border: none; border-radius: 8px; font-size: 15px; font-weight: bold; cursor: pointer; -webkit-appearance: none; min-width: 100px; }
+        .copy-otp-btn:active { background-color: #d35400; }
+
+        /* Style bổ sung cho danh sách đơn hàng */
         .order-list { text-align: left; max-height: 250px; overflow-y: auto; margin-top: 15px; }
-        .order-item { background: #fbfbfb; border: 1px solid #eee; padding: 10px; border-radius: 8px; margin-bottom: 8px; font-size: 13px; }
-        .status-badge { display: inline-block; padding: 3px 6px; border-radius: 4px; font-size: 11px; font-weight: bold; margin-top: 5px; }
+        .order-item { background: #fafafa; border: 1px solid #eee; padding: 12px; border-radius: 8px; margin-bottom: 8px; font-size: 13px; }
+        .status-badge { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; margin-top: 6px; }
         .status-shipping { background: #fff3cd; color: #856404; }
-        .status-success { background: #f8d7da; color: #721c24; }
+        .status-success-badge { background: #f8d7da; color: #721c24; }
     </style>
 </head>
 <body>
 
-<div class="wrapper">
-
-    <!-- KHU VỰC 1: LẤY LINK XÁC THỰC / OTP NHANH -->
-    <div class="card">
-        <h2>Shopee Link Fetcher</h2>
-        <div class="input-group">
-            <label>Nhập tên hoặc địa chỉ Email:</label>
-            <input type="text" id="otp_email" placeholder="Ví dụ: squints_cutlers.5a">
-        </div>
-        <button class="btn btn-orange" onclick="layOtpNhanh()">Lấy Link Xác Thực / OTP</button>
-        
-        <!-- Hộp hiển thị kết quả quét nhanh -->
-        <div id="otpResultArea" style="display: none;" class="result-box">
-            <div class="result-item">📧 Email quét: <span id="res_email" class="bold-val"></span></div>
-            <div class="result-item">🔑 Mã OTP: <div id="res_otp" class="otp-display">⏳ Đang tải...</div></div>
-            <div class="result-item">⏰ Thời gian nhận thư: <span id="res_time" class="bold-val"></span></div>
-            <div class="result-item" style="margin-bottom: 12px;">🔗 Đường dẫn xác thực: <span id="res_link" class="bold-val"></span></div>
-            
-            <button id="btn_open_link" class="btn btn-green" style="display: none;">Mở Link</button>
-            <button id="btn_copy_link" class="btn btn-blue" style="display: none;">Copy Link</button>
-        </div>
+<!-- KHU VỰC 1: LẤY LINK XÁC THỰC / OTP NHANH (MẪU GỐC CỦA BẠN) -->
+<div class="container">
+    <h2>Shopee Link Fetcher</h2>
+    
+    <label for="hideInput">Nhập tên hoặc địa chỉ Email:</label>
+    <div class="input-group">
+        <input type="text" id="hideInput" placeholder="Ví dụ: his-95.morsel hoặc his-95.morsel@icloud.com" inputmode="email">
     </div>
+    
+    <button id="fetchBtn" onclick="fetchVerificationLink()">Lấy Link Xác Thực / OTP</button>
+    
+    <div id="loadingBox" class="result-box status-loading">Đang kết nối hộp thư và quét dữ liệu, vui lòng đợi...</div>
+    
+    <div id="resultBox" class="result-box">
+        <!-- Kết quả hiển thị tự động tại đây -->
+    </div>
+</div>
 
-    <!-- KHU VỰC 2: NẠP ĐƠN HÀNG VÀ THEO DÕI GIAO THÀNH CÔNG (QUÉT NGẦM) -->
-    <div class="card">
-        <h2>Nạp Đơn Hàng Quét Ngầm</h2>
-        <div class="input-group">
-            <label>Mã đơn hàng Shopee:</label>
+<!-- KHU VỰC 2: NẠP ĐƠN HÀNG VÀ THEO DÕI TỰ ĐỘNG (QUÉT NGẦM CLOUDFLARE) -->
+<div class="container">
+    <h2>Nạp Đơn Quét Ngầm</h2>
+    
+    <div style="margin-bottom: 12px;">
+        <label>Mã đơn hàng Shopee:</label>
+        <div class="input-group" style="margin-bottom:0;">
             <input type="text" id="manager_order_id" placeholder="Ví dụ: 260908FD8YK34N">
         </div>
-        <div class="input-group">
-            <label>Địa chỉ Email hòm thư:</label>
+    </div>
+    
+    <div style="margin-bottom: 20px;">
+        <label>Địa chỉ Email hòm thư:</label>
+        <div class="input-group" style="margin-bottom:0;">
             <input type="email" id="manager_email" placeholder="Ví dụ: snowy.eidolon_2m@icloud.com">
         </div>
-        <button class="btn btn-orange" onclick="napDonQuetNg()()">Nạp Đơn Vào Hệ Thống</button>
-        
-        <div class="order-list">
-            <div style="font-weight: bold; font-size: 14px; border-bottom: 1px solid #ddd; padding-bottom: 4px; margin-bottom: 8px; color: #555;">📊 TIẾN ĐỘ THEO DÕI ĐƠN</div>
-            <div id="boxDanhSachDon">Đang tải danh sách...</div>
-        </div>
     </div>
-
+    
+    <button id="addOrderBtn" onclick="napDonQuetNgam()">Nạp Đơn Vào Hệ Thống</button>
+    
+    <div class="order-list">
+        <div style="font-weight: bold; font-size: 14px; border-bottom: 1px solid #ddd; padding-bottom: 6px; margin-bottom: 8px; color: #555; text-align: left;">📊 TIẾN ĐỘ THEO DÕI ĐƠN</div>
+        <div id="boxDanhSachDon" style="text-align: center; color: #999; font-size: 13px; padding: 10px 0;">Đang tải danh sách đơn...</div>
+    </div>
 </div>
 
 <script>
-    // Link kết nối trực tiếp đến hệ thống của bạn
-    const APPS_SCRIPT_URL = "https://google.com";
+    // Link API Google Apps Script và Cloudflare Worker của bạn
+    const webAppUrl = "https://script.google.com/macros/s/AKfycbwA93_KC9nEKQ-wtHHbpkYhar2BSJGRyM3pCYGsraHazZUyL5VZMBLy6TiS2__gHzM/exec";
     const CLOUDFLARE_URL = "https://workers.dev";
 
-    // ================= XỬ LÝ KHU VỰC 1: LẤY OTP QUA JSONP =================
-    function layOtpNhanh() {
-        const inputVal = document.getElementById('otp_email').value.trim();
-        if (!inputVal) { alert("Vui lòng điền thông tin email!"); return; }
+    // Lệnh xử lý khu vực 1: Quét hòm thư lấy OTP/Link nhanh (Dựa trên code Fetch chuẩn của bạn)
+    async function fetchVerificationLink() {
+        let inputVal = document.getElementById("hideInput").value.trim();
+        const fetchBtn = document.getElementById("fetchBtn");
+        const loadingBox = document.getElementById("loadingBox");
+        const resultBox = document.getElementById("resultBox");
         
-        const resultArea = document.getElementById('otpResultArea');
-        const resOtp = document.getElementById('res_otp');
-        resultArea.style.display = "block";
-        resOtp.innerText = "⏳ Đang quét hòm thư...";
+        if (!inputVal) {
+            alert("Vui lòng nhập tên địa chỉ email của bạn!");
+            return;
+        }
         
-        // Tạo chuỗi gọi hàm Callback nhận kết quả (JSONP) để vượt rào bảo mật Vercel
-        const callbackName = "shopee_callback_" + Math.round(Math.random() * 100000);
-        window[callbackName] = function(data) {
-            // Xóa thẻ script sau khi nhận dữ liệu xong cho sạch web
-            document.body.removeChild(script);
-            delete window[callbackName];
-            
-            if (data.status === "error") {
-                resOtp.innerText = "❌ Lỗi";
-                alert(data.message);
-                return;
-            }
-            
-            // Đổ dữ liệu lên màn hình
-            document.getElementById('res_email').innerText = data.hide_email_tin;
-            document.getElementById('res_time').innerText = data.thoi_gian_nhan_thu;
-            document.getElementById('res_link').innerText = data.link_xac_thuc_tai_day;
-            
-            const btnOpen = document.getElementById('btn_open_link');
-            const btnCopy = document.getElementById('btn_copy_link');
-            
-            // Nếu có OTP, hiện OTP và ẩn các nút điều hướng link
-            if (data.otp && data.otp !== "Không có") {
-                resOtp.innerText = data.otp;
-                btnOpen.style.display = "none";
-                btnCopy.style.display = "none";
-            } else {
-                resOtp.innerText = "Chỉ có link";
-                // Cấu hình nút bấm mở link trực tiếp tab mới
-                btnOpen.style.display = "block";
-                btnOpen.onclick = function() { window.open(data.link_xac_thuc_tai_day, '_blank'); };
-                // Cấu hình nút copy nhanh
-                btnCopy.style.display = "block";
-                btnCopy.onclick = function() {
-                    navigator.clipboard.writeText(data.link_xac_thuc_tai_day);
-                    alert("Đã sao chép đường link xác thực!");
-                };
-            }
-        };
+        if (inputVal.toLowerCase().endsWith("@icloud.com")) {
+            inputVal = inputVal.substring(0, inputVal.toLowerCase().lastIndexOf("@icloud.com"));
+        }
         
-        // Tạo lệnh nhúng script gọi trực tiếp sang Google Apps Script của bạn
-        const script = document.createElement('script');
-        script.src = `${APPS_SCRIPT_URL}?hide=${encodeURIComponent(inputVal)}&callback=${callbackName}`;
-        document.body.appendChild(script);
-    }
-
-    // ================= XỬ LÝ KHU VỰC 2: QUẢN LÝ ĐƠN HÀNG CLOUDFLARE =================
-    async function napDonQuetNg() {
-        const orderId = document.getElementById('manager_order_id').value.trim();
-        const email = document.getElementById('manager_email').value.trim();
-        if (!orderId || !email) { alert("Vui lòng nhập đủ Mã đơn và Email!"); return; }
-
+        fetchBtn.disabled = true;
+        loadingBox.style.display = "block";
+        resultBox.style.display = "none";
+        resultBox.className = "result-box";
+        
         try {
-            const res = await fetch(`${CLOUDFLARE_URL}/add-order`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ order_id: orderId, email: email })
-            });
-            if (res.ok) {
-                alert("🎉 Nạp đơn thành công! Hệ thống bắt đầu theo dõi ngầm.");
-                document.getElementById('manager_order_id').value = "";
-                document.getElementById('manager_email').value = "";
-                taiDanhSachDon();
-            } else { alert("Lỗi khi nạp đơn!"); }
-        } catch (e) { alert("Lỗi kết nối Server Cloudflare!"); }
-    }
-
-    async function taiDanhSachDon() {
-        const box = document.getElementById('boxDanhSachDon');
-        try {
-            const res = await fetch(`${CLOUDFLARE_URL}/list-orders`);
-            const data = await res.json();
-            if (!data || data.length === 0) { box.innerHTML = "<div style='color:#999; text-align:center; padding:10px;'>Hàng đợi trống.</div>"; return; }
+            const response = await fetch(`${webAppUrl}?hide=${encodeURIComponent(inputVal)}`);
+            const data = await response.json();
             
-            let html = "";
-            data.forEach(item => {
-                let badgeClass = item.order_status === "SUCCESS" ? "status-success" : "status-shipping";
-                let badgeText = item.order_status === "SUCCESS" ? "✅ Đã nhận hàng" : "⏳ Chờ giao hàng";
-                html += `
-                    <div class="order-item">
-                        <div><b>📦 Đơn:</b> #${item.order_id}</div>
-                        <div style="color:#666; word-break:break-all;"><b>📧 Mail:</b> ${item.customer_email}</div>
-                        <div class="status-badge ${badgeClass}">${badgeText}</div>
+            loadingBox.style.display = "none";
+            fetchBtn.disabled = false;
+            resultBox.style.display = "block";
+            
+            if (data.status === "success") {
+                resultBox.classList.add("status-success");
+                
+                let displayTime = data.thoi_gian_nhan_thu;
+                if(data.thoi_gian_nhan_thu && data.thoi_gian_nhan_thu.indexOf('T') !== -1) {
+                    displayTime = new Date(data.thoi_gian_nhan_thu).toLocaleString('vi-VN');
+                }
+                
+                let actionButtonsHtml = '';
+                
+                // Trực quan hóa điều kiện phân tầng ưu tiên hiển thị nút bấm
+                if (data.link_xac_thuc_tai_day && data.link_xac_thuc_tai_day !== "Không có") {
+                    actionButtonsHtml += `
+                        <a href="${data.link_xac_thuc_tai_day}" target="_blank" class="verify-btn">MỞ LINK</a>
+                        <button class="copy-btn" onclick="copyToClipboard('${data.link_xac_thuc_tai_day}', 'Đã copy link xác thực thành công!')">COPY LINK</button>
+                    `;
+                }
+                
+                if (data.otp && data.otp !== "Không có") {
+                    actionButtonsHtml += `
+                        <button class="copy-otp-btn" onclick="copyToClipboard('${data.otp}', 'Đã copy mã OTP ${data.otp} thành công!')">COPY OTP</button>
+                    `;
+                }
+                
+                resultBox.innerHTML = `
+                    <div class="data-item"><span class="data-label">Email quét:</span> ${data.hide_email_tin}</div>
+                    <div class="data-item"><span class="data-label">Mã OTP:</span> <span style="color:#ee4d2d; font-weight:bold; font-size:18px;">${data.otp}</span></div>
+                    <div class="data-item"><span class="data-label">Thời gian nhận thư:</span> <span style="color:#d35400; font-weight:bold;">${displayTime}</span></div>
+                    <div class="data-item"><span class="data-label">Đường dẫn xác thực:</span></div>
+                    <div style="font-size:12px; color:#666; margin-bottom:10px; max-height:60px; overflow-y:auto; background:#eee; padding:8px; border-radius:6px; word-break:break-all;">${data.link_xac_thuc_tai_day}</div>
+                    
+                    <div class="action-buttons">
+                        ${actionButtonsHtml}
                     </div>
                 `;
-            });
+            } else {
+                resultBox.classList.add("status-error");
+                resultBox.innerHTML = `
+                    <div class="data-item" style="color:#e74c3c; font-weight:bold; text-align:center; margin-bottom:0;">${data.message}</div>
+                `;
+            }
+            
+        } catch (error) {
+            loadingBox.style.display = "none";
+            fetchBtn.disabled = false;
+            resultBox.style.display = "block";
