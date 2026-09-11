@@ -30,8 +30,43 @@
         .copy-otp-btn { background-color: #e67e22; }
         .otp-display { font-size: 22px; font-weight: bold; color: #ee4d2d; margin: 3px 0; text-align: center; }
         
-        /* CSS cho danh sách đơn hàng & các nút hành động (Sửa / Xóa) */
-        .order-table-container { margin-top: 10px; max-height: 250px; overflow-y: auto; border: 1px solid #eee; border-radius: 8px; padding: 8px; background: #fff; }
+        /* CSS cho danh sách đơn hàng & Tìm kiếm & More */
+        .order-table-container { 
+            margin-top: 10px; 
+            max-height: 250px; /* Chiều cao mặc định (gọn gàng) */
+            overflow-y: auto; 
+            border: 1.5px solid #eee; 
+            border-radius: 8px; 
+            padding: 8px; 
+            background: #fff; 
+            transition: max-height 0.3s ease-in-out; /* Hiệu ứng mượt mà khi mở rộng */
+        }
+        .order-table-container.expanded {
+            max-height: 600px; /* Khi bấm xem thêm sẽ mở rộng cao hơn */
+        }
+        .search-box { margin-bottom: 10px; }
+        .search-box input { padding: 9px 12px; font-size: 13px; border: 1px solid #ccc; border-radius: 6px; }
+        
+        /* Nút Xem Thêm / Thu Gọn */
+        .toggle-more-btn {
+            background: none;
+            border: none;
+            color: #ee4d2d;
+            font-size: 13px;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+            text-align: center;
+            padding: 8px 0;
+            margin-top: 5px;
+            text-transform: none;
+            display: none; /* Mặc định ẩn, chỉ hiện khi danh sách dài */
+        }
+        .toggle-more-btn:hover {
+            text-decoration: underline;
+            background-color: transparent;
+        }
+
         .order-card { padding: 10px; border-bottom: 1px solid #f0f0f0; font-size: 13px; text-align: left; display: flex; justify-content: space-between; align-items: flex-start; }
         .order-card:last-child { border-bottom: none; }
         .order-info { flex-grow: 1; padding-right: 8px; }
@@ -69,7 +104,7 @@
     
     <label for="orderCodeInput">Mã đơn hàng Shopee:</label>
     <div class="input-group">
-        <input type="text" id="orderCodeInput" placeholder="Ví dụ: #260908FD8YK34N">
+        <input type="text" id="orderCodeInput" placeholder="Ví dụ: 260908FD8YK34N">
     </div>
 
     <label for="productNameInput">Tên sản phẩm:</label>
@@ -84,13 +119,22 @@
     
     <button id="saveOrderBtn" onclick="saveShopeeOrder()">Nạp Đơn Vào Hệ Thống</button>
     
-    <div style="margin-top: 20px; font-weight: bold; font-size: 14px; text-align: left; color: #444; border-bottom: 2px solid #ee4d2d; padding-bottom: 5px;">
+    <div style="margin-top: 20px; font-weight: bold; font-size: 14px; text-align: left; color: #444; border-bottom: 2px solid #ee4d2d; padding-bottom: 5px; margin-bottom: 10px;">
         📊 TIẾN ĐỘ THEO DÕI ĐƠN
     </div>
+
+    <!-- Ô TÌM KIẾM NHANH -->
+    <div class="search-box">
+        <input type="text" id="searchOrderInput" placeholder="🔍 Tìm kiếm nhanh mã đơn hoặc tên sản phẩm..." onkeyup="filterOrders()">
+    </div>
     
+    <!-- KHUNG DANH SÁCH ĐƠN HÀNG -->
     <div id="orderListContainer" class="order-table-container">
         <div style="text-align: center; color: #888; padding: 15px; font-size: 13px;">Đang tải danh sách đơn...</div>
     </div>
+
+    <!-- NÚT XEM THÊM / THU GỌN -->
+    <button id="toggleMoreBtn" class="toggle-more-btn" onclick="toggleExpandOrders()">▼ Xem thêm đơn hàng cũ hơn</button>
 </div>
 
 <script>
@@ -103,7 +147,9 @@
 
     const webAppUrl = "https://script.google.com/macros/s/AKfycbwk0RSNFUrzaU7nSlNgAgazt3BWUNR-meYBYvJcSkJIFxQe4XiDfGd3FsfcSTWzOLk/exec";
 
-    // Tự động load danh sách đơn hàng khi mở trang
+    let allOrders = [];
+    let isExpanded = false;
+
     window.onload = function() {
         loadOrdersFromSupabase();
     };
@@ -215,7 +261,7 @@
         }
     }
 
-    // Hàm 3: Tải danh sách đơn hàng từ Supabase hiển thị ra bảng
+    // Hàm 3: Tải danh sách đơn hàng từ Supabase
     async function loadOrdersFromSupabase() {
         const container = document.getElementById("orderListContainer");
         
@@ -229,13 +275,30 @@
             return;
         }
 
-        if (!data || data.length === 0) {
-            container.innerHTML = `<div style="text-align: center; color: #888; padding: 10px;">Chưa có đơn hàng nào</div>`;
+        allOrders = data || [];
+        renderOrders(allOrders);
+    }
+
+    // Hàm hiển thị danh sách ra màn hình
+    function renderOrders(ordersToRender) {
+        const container = document.getElementById("orderListContainer");
+        const toggleBtn = document.getElementById("toggleMoreBtn");
+
+        if (!ordersToRender || ordersToRender.length === 0) {
+            container.innerHTML = `<div style="text-align: center; color: #888; padding: 15px; font-size: 13px;">Không tìm thấy đơn hàng phù hợp</div>`;
+            toggleBtn.style.display = "none";
             return;
         }
 
+        // Tự động ẩn hiện nút "Xem thêm" dựa vào tổng số lượng đơn (ví dụ trên 4 đơn thì hiện nút)
+        if (ordersToRender.length > 4 && !document.getElementById("searchOrderInput").value.trim()) {
+            toggleBtn.style.display = "block";
+        } else {
+            toggleBtn.style.display = "none";
+        }
+
         let html = '';
-        data.forEach(order => {
+        ordersToRender.forEach(order => {
             let statusClass = order.status === 'Đã giao thành công' ? 'status-done' : 'status-pending';
             let timeInfo = order.delivered_at ? `<br><span style="color:#27ae60; font-size:11px;">Giao: ${new Date(order.delivered_at).toLocaleString('vi-VN')}</span>` : '';
             
@@ -247,8 +310,8 @@
                         <div style="font-size: 11px; color: #666;">📧 ${order.email} ${timeInfo}</div>
                     </div>
                     <div class="card-actions">
-                        <button class="edit-btn" onclick="editOrder(${order.id}, '${order.order_code}', '${order.product_name.replace(/'/g, "\\'")}', '${order.email}')" title="Chỉnh sửa đơn hàng">✏️</button>
-                        <button class="delete-btn" onclick="deleteOrder(${order.id})" title="Xóa đơn hàng">✕</button>
+                        <button class="edit-btn" onclick="editOrder(${order.id}, '${order.order_code}', '${order.product_name.replace(/'/g, "\\'")}', '${order.email}')" title="Sửa">✏️</button>
+                        <button class="delete-btn" onclick="deleteOrder(${order.id})" title="Xóa">✕</button>
                     </div>
                 </div>
             `;
@@ -257,10 +320,72 @@
         container.innerHTML = html;
     }
 
+    // Hàm bấm nút Xem thêm / Thu gọn khung đơn hàng
+    function toggleExpandOrders() {
+        const container = document.getElementById("orderListContainer");
+        const toggleBtn = document.getElementById("toggleMoreBtn");
+
+        isExpanded = !isExpanded;
+        if (isExpanded) {
+            container.classList.add("expanded");
+            toggleBtn.innerText = "▲ Thu gọn danh sách";
+        } else {
+            container.classList.remove("expanded");
+            toggleBtn.innerText = "▼ Xem thêm đơn hàng cũ hơn";
+        }
+    }
+
+    // Hàm lọc tìm kiếm đơn hàng ngay lập tức khi gõ chữ
+    function filterOrders() {
+        let keyword = document.getElementById("searchOrderInput").value.toLowerCase().trim();
+        const toggleBtn = document.getElementById("toggleMoreBtn");
+
+        if (!keyword) {
+            renderOrders(allOrders);
+            return;
+        }
+
+        // Khi đang tìm kiếm thì tạm ẩn nút xem thêm để kết quả tìm kiếm rõ ràng
+        toggleBtn.style.display = "none";
+
+        let filtered = allOrders.filter(order => 
+            (order.order_code && order.order_code.toLowerCase().includes(keyword)) ||
+            (order.product_name && order.product_name.toLowerCase().includes(keyword)) ||
+            (order.email && order.email.toLowerCase().includes(keyword))
+        );
+
+        const container = document.getElementById("orderListContainer");
+        if (filtered.length === 0) {
+            container.innerHTML = `<div style="text-align: center; color: #888; padding: 15px; font-size: 13px;">Không tìm thấy đơn hàng phù hợp</div>`;
+            return;
+        }
+
+        let html = '';
+        filtered.forEach(order => {
+            let statusClass = order.status === 'Đã giao thành công' ? 'status-done' : 'status-pending';
+            let timeInfo = order.delivered_at ? `<br><span style="color:#27ae60; font-size:11px;">Giao: ${new Date(order.delivered_at).toLocaleString('vi-VN')}</span>` : '';
+            
+            html += `
+                <div class="order-card">
+                    <div class="order-info">
+                        <div><span class="order-id">${order.order_code}</span> <span class="order-status ${statusClass}">${order.status || 'Đang chờ giao'}</span></div>
+                        <div class="order-name">📦 ${order.product_name}</div>
+                        <div style="font-size: 11px; color: #666;">📧 ${order.email} ${timeInfo}</div>
+                    </div>
+                    <div class="card-actions">
+                        <button class="edit-btn" onclick="editOrder(${order.id}, '${order.order_code}', '${order.product_name.replace(/'/g, "\\'")}', '${order.email}')" title="Sửa">✏️</button>
+                        <button class="delete-btn" onclick="deleteOrder(${order.id})" title="Xóa">✕</button>
+                    </div>
+                </div>
+            `;
+        });
+        container.innerHTML = html;
+    }
+
     // Hàm 4: Chỉnh sửa thông tin đơn hàng
     async function editOrder(id, oldCode, oldName, oldEmail) {
         let newCode = prompt("Nhập mã đơn hàng mới:", oldCode);
-        if (newCode === null) return; // Bấm Cancel thì thoát
+        if (newCode === null) return;
 
         let newName = prompt("Nhập tên sản phẩm mới:", oldName);
         if (newName === null) return;
@@ -291,7 +416,7 @@
         }
     }
 
-    // Hàm 5: Xóa đơn hàng theo ID của bảng Supabase
+    // Hàm 5: Xóa đơn hàng theo ID
     async function deleteOrder(id) {
         if (!confirm("Bạn có chắc chắn muốn xóa đơn hàng này khỏi danh sách không?")) {
             return;
