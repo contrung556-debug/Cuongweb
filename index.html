@@ -94,20 +94,28 @@
         .btn-check-all:hover {
             background-color: #219653;
         }
-        .btn-check-single {
-            background-color: #e67e22;
-            color: white;
+        .order-actions {
+            margin-top: 8px;
+            display: flex;
+            gap: 6px;
+        }
+        .btn-action {
+            flex: 1;
+            padding: 6px;
             border: none;
-            padding: 5px 10px;
             border-radius: 4px;
-            cursor: pointer;
             font-weight: bold;
             font-size: 11px;
-            float: right;
+            cursor: pointer;
+            color: white;
+            text-align: center;
         }
-        .btn-check-single:hover {
-            background-color: #d35400;
-        }
+        .btn-check-single { background-color: #e67e22; }
+        .btn-check-single:hover { background-color: #d35400; }
+        .btn-edit { background-color: #2980b9; }
+        .btn-edit:hover { background-color: #1f6391; }
+        .btn-delete { background-color: #c0392b; }
+        .btn-delete:hover { background-color: #962d22; }
         .order-card {
             padding: 12px;
             border-radius: 8px;
@@ -190,7 +198,6 @@
             return;
         }
 
-        // Bước 1: Kiểm tra xem mã đơn hàng đã tồn tại trên Supabase chưa
         const { data: existingOrders, error: checkError } = await _supabase
             .from('shopee_orders')
             .select('id, order_code')
@@ -207,7 +214,6 @@
             return;
         }
 
-        // Bước 2: Nếu chưa trùng thì tiến hành thêm mới
         const { data, error } = await _supabase
             .from('shopee_orders')
             .insert([
@@ -250,7 +256,7 @@
         renderOrders(orders);
     }
 
-    // Hiển thị danh sách đơn ra giao diện
+    // Hiển thị danh sách đơn ra giao diện (Có nút Check, Sửa, Xóa)
     function renderOrders(orders) {
         const container = document.getElementById("orderListContainer");
         let html = '';
@@ -269,27 +275,86 @@
 
             let priceFormatted = ord.price && ord.price > 0 ? ord.price.toLocaleString('vi-VN') + ' VNĐ' : '0 VNĐ';
 
-            let checkButton = '';
-            if (!isDelivered) {
-                checkButton = `<button class="btn-check-single" onclick="checkSingleOrder('${ord.id}', '${ord.order_code}', '${ord.email}')">🔍 Kiểm tra ngay</button>`;
-            }
+            // Các nút thao tác cho từng đơn
+            let checkBtn = !isDelivered ? `<button class="btn-action btn-check-single" onclick="checkSingleOrder('${ord.id}', '${ord.order_code}', '${ord.email}')">🔍 Check</button>` : '';
 
             html += `
                 <div class="order-card" style="background: ${statusBg}; border-left: 4px solid ${statusColor};">
-                    <div>
-                        <span class="order-id">#${ord.order_code}</span> 
-                        ${checkButton}
-                        <span style="font-size: 11px; padding: 2px 6px; border-radius: 4px; background: ${statusColor}; color: white; float: right; font-weight: bold; margin-right: 5px;">${statusText}</span>
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span class="order-id">#${ord.order_code}</span>
+                        <span style="font-size: 11px; padding: 2px 6px; border-radius: 4px; background: ${statusColor}; color: white; font-weight: bold;">${statusText}</span>
                     </div>
                     <div class="order-name" style="margin-top: 6px; font-size: 13px; color: #444;">📦 ${ord.product_name || 'Đơn hàng Shopee'}</div>
                     <div style="font-size: 12px; color: #555; margin-top: 2px;">💰 Thanh toán: <b style="color: #e74c3c;">${priceFormatted}</b></div>
                     <div style="font-size: 12px; color: #666; margin-top: 2px;">📧 Email: ${ord.email}</div>
                     ${timeText}
+
+                    <!-- Khu vực nút bấm Thao tác: Check, Sửa, Xóa -->
+                    <div class="order-actions">
+                        ${checkBtn}
+                        <button class="btn-action btn-edit" onclick="editOrder('${ord.id}', '${ord.order_code}', '${ord.product_name}', '${ord.email}')">✏️ Sửa</button>
+                        <button class="btn-action btn-delete" onclick="deleteOrder('${ord.id}', '${ord.order_code}')">🗑️ Xóa</button>
+                    </div>
                 </div>
             `;
         });
 
         container.innerHTML = html;
+    }
+
+    // Chỉnh sửa đơn hàng
+    async function editOrder(id, oldCode, oldName, oldEmail) {
+        let newCode = prompt("Nhập mã đơn hàng mới:", oldCode);
+        if (newCode === null) return;
+        newCode = newCode.trim();
+
+        let newName = prompt("Nhập tên sản phẩm mới:", oldName);
+        if (newName === null) return;
+        newName = newName.trim();
+
+        let newEmail = prompt("Nhập email hòm thư mới:", oldEmail);
+        if (newEmail === null) return;
+        newEmail = newEmail.trim();
+
+        if (!newCode || !newEmail) {
+            alert("Mã đơn và Email không được để trống!");
+            return;
+        }
+
+        const { error } = await _supabase
+            .from('shopee_orders')
+            .update({ 
+                order_code: newCode, 
+                product_name: newName, 
+                email: newEmail 
+            })
+            .eq('id', id);
+
+        if (error) {
+            alert("Lỗi khi cập nhật đơn: " + error.message);
+        } else {
+            alert("Đã cập nhật thông tin đơn hàng thành công!");
+            loadOrdersFromSupabase();
+        }
+    }
+
+    // Xóa đơn hàng
+    async function deleteOrder(id, orderCode) {
+        if (!confirm(`Bạn có chắc chắn muốn xóa đơn hàng #${orderCode} không?`)) {
+            return;
+        }
+
+        const { error } = await _supabase
+            .from('shopee_orders')
+            .delete()
+            .eq('id', id);
+
+        if (error) {
+            alert("Lỗi khi xóa đơn: " + error.message);
+        } else {
+            alert("Đã xóa đơn hàng thành công!");
+            loadOrdersFromSupabase();
+        }
     }
 
     // Check All
