@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hệ thống Đơn hàng Shopee</title>
+    <title>Hệ thống Shopee Manager</title>
     <!-- Thư viện Supabase JS Client -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
@@ -11,101 +11,149 @@
             font-family: Arial, sans-serif;
             background-color: #f4f7f6;
             margin: 0;
-            padding: 20px;
+            padding: 15px;
             color: #333;
         }
         .container {
             max-width: 600px;
             margin: 0 auto;
             background: #fff;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            padding: 15px;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.08);
         }
-        h2 {
+        h2, h3 {
             text-align: center;
             color: #ee4d2d;
+            margin-bottom: 15px;
         }
-        .user-box {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+        .section-box {
             background: #fff8f5;
-            padding: 10px 15px;
-            border-radius: 6px;
-            margin-bottom: 20px;
+            padding: 15px;
+            border-radius: 8px;
             border: 1px solid #faddd3;
+            margin-bottom: 20px;
+        }
+        label {
+            font-size: 13px;
+            font-weight: bold;
+            color: #444;
+            display: block;
+            margin-bottom: 5px;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 12px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-size: 14px;
+        }
+        .btn-main {
+            background-color: #ee4d2d;
+            color: white;
+            border: none;
+            padding: 11px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            width: 100%;
+            font-size: 14px;
+        }
+        .btn-main:hover {
+            background-color: #d73211;
         }
         .order-card {
-            padding: 12px 15px;
-            border-radius: 6px;
+            padding: 12px;
+            border-radius: 8px;
             margin-bottom: 12px;
             box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            background: #fff;
+            border: 1px solid #eee;
         }
         .order-id {
             font-weight: bold;
             color: #333;
-        }
-        .order-name {
-            font-size: 14px;
-            color: #444;
-            margin: 6px 0;
-        }
-        .btn-refresh {
-            background-color: #ee4d2d;
-            color: white;
-            border: none;
-            padding: 8px 15px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: bold;
-            width: 100%;
-            margin-top: 10px;
-        }
-        .btn-refresh:hover {
-            background-color: #d73211;
         }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>Quản lý Đơn hàng Shopee</h2>
     
-    <div class="user-box">
-        <div>Tài khoản: <b id="displayUsername">Đang tải...</b></div>
-        <button onclick="logout()" style="background:none; border:none; color:#ee4d2d; cursor:pointer; font-weight:bold;">Đăng xuất</button>
+    <!-- PHẦN 1: SHOPEE LINK FETCHER (Lấy OTP / Link xác thực) -->
+    <div class="section-box">
+        <h3>SHOPEE LINK FETCHER</h3>
+        <label>Nhập tên hoặc địa chỉ Email:</label>
+        <input type="text" id="fetchInputEmail" placeholder="Ví dụ: squints_cutlers.5a">
+        <button class="btn-main" onclick="fetchOtpLink()">Lấy Link Xác Thực / OTP</button>
+        <div id="fetchResult" style="margin-top: 10px; font-size: 13px;"></div>
     </div>
 
-    <h3>Danh sách đơn hàng của bạn</h3>
-    <div id="orderListContainer">
-        <div style="text-align: center; color: #888; padding: 20px;">Đang tải dữ liệu đơn hàng...</div>
+    <!-- PHẦN 2: NẠP ĐƠN QUÉT NGẨM & THEO DÕI -->
+    <div class="section-box">
+        <h3>NẠP ĐƠN QUÉT NGẨM</h3>
+        
+        <label>Mã đơn hàng Shopee:</label>
+        <input type="text" id="inputOrderCode" placeholder="Ví dụ: 260908FD8YK34N">
+
+        <label>Địa chỉ Email hòm thư:</label>
+        <input type="text" id="inputEmail" placeholder="Ví dụ: snowy.eidolon_2m@icloud.com">
+
+        <button class="btn-main" onclick="addNewOrder()">Nạp Đơn Vào Hệ Thống</button>
     </div>
 
-    <button class="btn-refresh" onclick="loadOrdersFromSupabase()">Tải lại danh sách</button>
+    <!-- PHẦN 3: TIẾN ĐỘ THEO DÕI ĐƠN -->
+    <div>
+        <h3 style="text-align: left; font-size: 16px; border-bottom: 2px solid #ee4d2d; padding-bottom: 5px;">📊 TIẾN ĐỘ THEO DÕI ĐƠN</h3>
+        
+        <input type="text" id="searchBox" placeholder="🔍 Tìm kiếm nhanh mã đơn hoặc tên sản phẩm..." onkeyup="filterOrders()" style="margin-top: 10px;">
+
+        <div id="orderListContainer">
+            <div style="text-align: center; color: #888; padding: 15px;">Đang tải danh sách đơn...</div>
+        </div>
+    </div>
+
 </div>
 
 <script>
-    // Cấu hình kết nối Supabase
     const SUPABASE_URL = "https://hsdbjzkxbdezysxwwtaw.supabase.co";
     const SUPABASE_ANON_KEY = "sb_publishable_LIeDI4UVn7MEo5vURP05hA_TM4h0vFd";
     const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    // Kiểm tra thông tin đăng nhập từ localStorage
-    let currentUsername = localStorage.getItem("shopee_logged_user");
+    let allOrdersData = [];
+    let currentUsername = localStorage.getItem("shopee_logged_user") || "Cuong123";
 
-    // Nếu chưa đăng nhập, giả lập gán user mẫu để test (hoặc chuyển hướng trang đăng nhập của bạn)
-    if (!currentUsername) {
-        currentUsername = "70up7yxjwl"; 
-        localStorage.setItem("shopee_logged_user", currentUsername);
+    // Hàm nạp đơn mới vào Supabase
+    async function addNewOrder() {
+        const orderCode = document.getElementById("inputOrderCode").value.trim();
+        const email = document.getElementById("inputEmail").value.trim();
+
+        if (!orderCode || !email) {
+            alert("Vui lòng nhập đầy đủ mã đơn hàng và địa chỉ email!");
+            return;
+        }
+
+        const { data, error } = await _supabase
+            .from('shopee_orders')
+            .insert([
+                { order_code: orderCode, email: email, username: currentUsername, status: 'Đang chờ giao' }
+            ]);
+
+        if (error) {
+            alert("Lỗi khi thêm đơn: " + error.message);
+        } else {
+            alert("Đã nạp đơn hàng thành công vào hệ thống!");
+            document.getElementById("inputOrderCode").value = '';
+            document.getElementById("inputEmail").value = '';
+            loadOrdersFromSupabase();
+        }
     }
 
-    document.getElementById("displayUsername").innerText = currentUsername;
-
-    // Hàm tải danh sách đơn hàng từ Supabase
+    // Tải danh sách đơn hàng từ Supabase
     async function loadOrdersFromSupabase() {
         const container = document.getElementById("orderListContainer");
-        container.innerHTML = `<div style="text-align: center; color: #888; padding: 20px;">Đang cập nhật...</div>`;
 
         const { data: orders, error } = await _supabase
             .from('shopee_orders')
@@ -114,33 +162,41 @@
             .order('created_at', { ascending: false });
 
         if (error || !orders || orders.length === 0) {
-            container.innerHTML = `<div style="text-align: center; color: #888; padding: 15px;">Chưa có đơn hàng nào trong hệ thống.</div>`;
+            container.innerHTML = `<div style="text-align: center; color: #888; padding: 15px;">Chưa có đơn hàng nào.</div>`;
             return;
         }
 
+        allOrdersData = orders;
+        renderOrders(orders);
+    }
+
+    // Hiển thị danh sách đơn ra giao diện
+    function renderOrders(orders) {
+        const container = document.getElementById("orderListContainer");
         let html = '';
+
         orders.forEach(ord => {
             let isDelivered = ord.status === 'Đã giao thành công';
-            
-            // Phối màu giao diện: Xanh lá nếu hoàn thành, Vàng cam nếu đang chờ
             let statusBg = isDelivered ? '#e8f8f5' : '#fef9e7';
             let statusColor = isDelivered ? '#27ae60' : '#d35400';
             let statusText = ord.status || 'Đang chờ giao';
             
-            // Hiển thị thời gian nhận hàng nếu có
             let timeText = '';
             if (isDelivered && ord.delivered_at) {
                 let d = new Date(ord.delivered_at);
                 timeText = `<div style="font-size: 11px; color: #27ae60; margin-top: 4px;">🕒 Giao lúc: ${d.toLocaleDateString('vi-VN')} ${d.toLocaleTimeString('vi-VN', {hour: '2-digit', minute:'2-digit'})}</div>`;
             }
 
-            let priceFormatted = ord.price ? ord.price.toLocaleString('vi-VN') + ' VNĐ' : '0 VNĐ';
+            let priceFormatted = ord.price && ord.price > 0 ? ord.price.toLocaleString('vi-VN') + ' VNĐ' : '0 VNĐ';
 
             html += `
                 <div class="order-card" style="background: ${statusBg}; border-left: 4px solid ${statusColor};">
-                    <div><span class="order-id">#${ord.order_code}</span> <span style="font-size: 11px; padding: 2px 6px; border-radius: 4px; background: ${statusColor}; color: white; float: right; font-weight: bold;">${statusText}</span></div>
-                    <div class="order-name">📦 ${ord.product_name || 'Đơn hàng Shopee'}</div>
-                    <div style="font-size: 12px; color: #555;">💰 Thanh toán: <b style="color: #e74c3c;">${priceFormatted}</b></div>
+                    <div>
+                        <span class="order-id">#${ord.order_code}</span> 
+                        <span style="font-size: 11px; padding: 2px 6px; border-radius: 4px; background: ${statusColor}; color: white; float: right; font-weight: bold;">${statusText}</span>
+                    </div>
+                    <div class="order-name" style="margin-top: 6px; font-size: 13px; color: #444;">📦 ${ord.product_name || 'Đơn hàng Shopee'}</div>
+                    <div style="font-size: 12px; color: #555; margin-top: 2px;">💰 Thanh toán: <b style="color: #e74c3c;">${priceFormatted}</b></div>
                     <div style="font-size: 12px; color: #666; margin-top: 2px;">📧 Email: ${ord.email}</div>
                     ${timeText}
                 </div>
@@ -150,13 +206,27 @@
         container.innerHTML = html;
     }
 
-    function logout() {
-        localStorage.removeItem("shopee_logged_user");
-        alert("Đã đăng xuất thành công!");
-        location.reload();
+    // Tìm kiếm nhanh đơn hàng
+    function filterOrders() {
+        let keyword = document.getElementById("searchBox").value.toLowerCase();
+        let filtered = allOrdersData.filter(ord => 
+            ord.order_code.toLowerCase().includes(keyword) || 
+            (ord.product_name && ord.product_name.toLowerCase().includes(keyword))
+        );
+        renderOrders(filtered);
     }
 
-    // Tự động load dữ liệu ngay khi mở trang
+    // Hàm giả lập nút lấy OTP/Link phía trên
+    function fetchOtpLink() {
+        let val = document.getElementById("fetchInputEmail").value;
+        if (!val) {
+            alert("Vui lòng nhập tên hoặc email để lấy link!");
+            return;
+        }
+        document.getElementById("fetchResult").innerHTML = `<span style="color: #27ae60;">Đang tìm link xác thực cho ${val}...</span>`;
+    }
+
+    // Tự động tải danh sách khi mở trang
     loadOrdersFromSupabase();
 </script>
 
