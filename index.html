@@ -3,156 +3,74 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hệ Thống Lấy Link Xác Thực Shopee</title>
+    <title>Test Lưu Dữ Liệu Thuần</title>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f6f6f6; margin: 0; padding: 15px; display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 90vh; }
-        .container { background: white; padding: 25px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); width: 100%; max-width: 450px; box-sizing: border-box; margin-bottom: 20px; text-align: center; }
-        h2 { color: #ee4d2d; text-align: center; margin-top: 0; font-size: 22px; margin-bottom: 20px; text-transform: uppercase; }
-        label { font-weight: 600; display: block; margin-bottom: 8px; color: #333; font-size: 15px; text-align: left; }
-        .input-group { position: relative; margin-bottom: 20px; display: flex; align-items: center; width: 100%; }
-        input[type="text"] { width: 100%; padding: 14px; border: 1.5px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; transition: border 0.3s; -webkit-appearance: none; }
-        input[type="text"]:focus { border-color: #ee4d2d; outline: none; }
-        button { width: 100%; padding: 14px; background-color: #ee4d2d; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; transition: background 0.3s; -webkit-appearance: none; text-transform: uppercase; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: #f6f6f6; margin: 0; padding: 15px; display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 90vh; }
+        .container { background: white; padding: 25px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); width: 100%; max-width: 400px; box-sizing: border-box; text-align: center; }
+        h2 { color: #ee4d2d; margin-top: 0; font-size: 18px; margin-bottom: 20px; text-transform: uppercase; border-bottom: 2px solid #ee4d2d; padding-bottom: 8px; }
+        input { width: 100%; padding: 14px; border: 1.5px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; outline: none; margin-bottom: 20px; }
+        input:focus { border-color: #ee4d2d; }
+        button { width: 100%; padding: 14px; background-color: #ee4d2d; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; text-transform: uppercase; }
         button:active { background-color: #d73c1f; }
         button:disabled { background-color: #ccc; cursor: not-allowed; }
-        .result-box { margin-top: 25px; padding: 15px; border-radius: 8px; background-color: #fafafa; border: 1px solid #e6e6e6; display: none; box-sizing: border-box; }
-        .status-success { border-left: 5px solid #2ecc71; }
-        .status-error { border-left: 5px solid #e74c3c; }
-        .status-loading { border-left: 5px solid #3498db; text-align: center; color: #666; font-weight: 500; }
-        .data-item { margin-bottom: 12px; font-size: 15px; word-break: break-all; color: #444; text-align: left; }
-        .data-label { font-weight: bold; color: #666; }
-        
-        .action-buttons { display: flex; gap: 10px; margin-top: 15px; flex-wrap: wrap; }
-        .verify-btn { flex: 2; display: block; text-align: center; padding: 12px; background-color: #2ecc71; color: white; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px; box-sizing: border-box; -webkit-appearance: none; min-width: 120px; }
-        .verify-btn:active { background-color: #27ae60; }
-        .copy-btn { flex: 1; padding: 12px; background-color: #3498db; color: white; border: none; border-radius: 8px; font-size: 15px; font-weight: bold; cursor: pointer; -webkit-appearance: none; min-width: 100px; }
-        .copy-btn:active { background-color: #2980b9; }
-        .copy-otp-btn { flex: 1; padding: 12px; background-color: #e67e22; color: white; border: none; border-radius: 8px; font-size: 15px; font-weight: bold; cursor: pointer; -webkit-appearance: none; min-width: 100px; }
-        .copy-otp-btn:active { background-color: #d35400; }
-        .otp-display { font-size: 26px; font-weight: bold; color: #ee4d2d; letter-spacing: 1px; margin: 5px 0; text-align: center; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>Shopee Link Fetcher</h2>
+    <h2>Kiểm Tra Lưu Data D1</h2>
     
-    <label for="hideInput">Nhập tên hoặc địa chỉ Email:</label>
-    <div class="input-group">
-        <input type="text" id="hideInput" placeholder="Ví dụ: 14.hour.pines" inputmode="email">
-    </div>
+    <input type="text" id="textInput" placeholder="Nhập chữ bất kỳ vào đây để test lưu...">
     
-    <button id="fetchBtn" onclick="fetchVerificationLink()">Quét Thư Nhanh</button>
-    
-    <div id="loadingBox" class="result-box status-loading">Đang kết nối hộp thư và quét dữ liệu, vui lòng đợi...</div>
-    
-    <div id="resultBox" class="result-box"></div>
+    <button id="saveBtn" onclick="testLuuDuLieuThuand()">Bấm Để Lưu</button>
 </div>
 
 <script>
-    // 🔥 ĐÃ CẬP NHẬT ĐƯỜNG LINK WEB APP APPS SCRIPT MỚI CỦA BẠN VÀO ĐÂY
-    const webAppUrl = "https://script.google.com/macros/s/AKfycbwk0RSNFUrzaU7nSlNgAgazt3BWUNR-meYBYvJcSkJIFxQe4XiDfGd3FsfcSTWzOLk/exec";
+    // Link API Cloudflare Worker của bạn
+    const CLOUDFLARE_URL = "https://workers.dev";
 
-    // Hàm gọi lấy dữ liệu qua cơ chế JSONP Callback đồng bộ mượt mà
-    function fetchVerificationLink() {
-        let inputVal = document.getElementById("hideInput").value.trim();
-        const fetchBtn = document.getElementById("fetchBtn");
-        const loadingBox = document.getElementById("loadingBox");
-        const resultBox = document.getElementById("resultBox");
-        
-        if (!inputVal) {
-            alert("Vui lòng nhập tên địa chỉ email của bạn!");
+    async function testLuuDuLieuThuand() {
+        const textVal = document.getElementById('textInput').value.trim();
+        const saveBtn = document.getElementById('saveBtn');
+
+        if (!textVal) {
+            alert("Vui lòng gõ chữ vào ô trống trước khi bấm lưu!");
             return;
         }
-        
-        if (inputVal.toLowerCase().endsWith("@icloud.com")) {
-            inputVal = inputVal.substring(0, inputVal.toLowerCase().lastIndexOf("@icloud.com"));
-        }
-        
-        // Hiện trạng thái Loading
-        fetchBtn.disabled = true;
-        loadingBox.style.display = "block";
-        resultBox.style.display = "none";
-        resultBox.className = "result-box";
-        
-        // Tạo chuỗi tên hàm Callback ngẫu nhiên độc lập chống đơ nút bấm
-        const callbackName = "shopee_callback_" + Math.round(Math.random() * 100000);
-        
-        window[callbackName] = function(data) {
-            // Tự động xóa thẻ script ngay khi nhận được data để giải phóng nút bấm cho lần sau
-            const oldScript = document.getElementById(callbackName);
-            if (oldScript) { oldScript.parentNode.removeChild(oldScript); }
-            delete window[callbackName];
-            
-            loadingBox.style.display = "none";
-            fetchBtn.disabled = false;
-            resultBox.style.display = "block";
-            
-            if (data.status === "success") {
-                resultBox.classList.add("status-success");
-                
-                let displayTime = data.thoi_gian_nhan_thu;
-                if(data.thoi_gian_nhan_thu && data.thoi_gian_nhan_thu.indexOf('T') !== -1) {
-                    displayTime = new Date(data.thoi_gian_nhan_thu).toLocaleString('vi-VN');
-                }
-                
-                let actionButtonsHtml = '';
-                let otpDisplayHtml = data.otp;
 
-                // CHUỖI PHÂN PHỐI HIỂN THỊ THEO ĐÚNG TẦNG ƯU TIÊN TRÊN GIAO DIỆN
-                if (data.otp && data.otp !== "Không có") {
-                    // Nếu thư có số OTP: Hiện nút copy OTP, ẩn tất cả nút liên quan đến Link
-                    actionButtonsHtml += `
-                        <button class="copy-otp-btn" onclick="copyToClipboard('${data.otp}', 'Đã copy mã OTP ${data.otp} thành công!')">COPY OTP</button>
-                    `;
-                } else if (data.link_xac_thuc_tai_day && data.link_xac_thuc_tai_day !== "Không có") {
-                    // Nếu không có OTP mà có Link (Link Shopee ngắn hoặc Link Sendgrid dài): Hiện nút Mở & Copy Link
-                    otpDisplayHtml = "Chỉ có link";
-                    actionButtonsHtml += `
-                        <a href="${data.link_xac_thuc_tai_day}" target="_blank" class="verify-btn">MỞ LINK</a>
-                        <button class="copy-btn" onclick="copyToClipboard('${data.link_xac_thuc_tai_day}', 'Đã copy link xác thực thành công!')">COPY LINK</button>
-                    `;
-                }
-                
-                resultBox.innerHTML = `
-                    <div class="data-item"><span class="data-label">Email quét:</span> ${data.hide_email_tin}</div>
-                    <div class="data-item"><span class="data-label">Kết quả mã số:</span> <div class="otp-display">${otpDisplayHtml}</div></div>
-                    <div class="data-item"><span class="data-label">Thời gian nhận thư:</span> <span style="color:#d35400; font-weight:bold;">${displayTime}</span></div>
-                    <div class="data-item"><span class="data-label">Đường dẫn xác thực:</span></div>
-                    <div style="font-size:12px; color:#666; margin-bottom:10px; max-height:60px; overflow-y:auto; background:#eee; padding:8px; border-radius:6px; word-break:break-all;">${data.link_xac_thuc_tai_day}</div>
-                    
-                    <div class="action-buttons">
-                        ${actionButtonsHtml}
-                    </div>
-                `;
+        saveBtn.disabled = true;
+        saveBtn.innerText = "ĐANG GỬI...";
+
+        try {
+            // Sử dụng cổng /sync-apps-script có sẵn trong Worker để test đẩy data thô lên hòm D1
+            const response = await fetch(`${CLOUDFLARE_URL}/sync-apps-script`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    email: textVal, // Đưa chuỗi bạn nhập vào cột Email
+                    otp: "Mã Test",
+                    time: new Date().toLocaleString('vi-VN'),
+                    link: "Link Test",
+                    is_order_success: false
+                })
+            });
+
+            const result = await response.json();
+
+            if (response.ok && result.success === true) {
+                // NỔ THÔNG BÁO KHI LƯU THÀNH CÔNG VỀ DATABASE D1
+                alert("🎉 THÀNH CÔNG! Dữ liệu đã được gửi và lưu trữ vĩnh viễn vào Database Cloudflare D1.");
+                document.getElementById('textInput').value = ""; // Xóa sạch ô nhập để nhập từ mới
             } else {
-                resultBox.classList.add("status-error");
-                resultBox.innerHTML = `
-                    <div class="data-item" style="color:#e74c3c; font-weight:bold; text-align:center; margin-bottom:0;">${data.message}</div>
-                `;
+                alert("❌ THẤT BẠI: Cloudflare Worker từ chối lưu dữ liệu!");
             }
-        };
-        
-        // Chèn thẻ Script truyền dữ liệu JSONP
-        const script = document.createElement('script');
-        script.id = callbackName;
-        script.src = `${webAppUrl}?hide=${encodeURIComponent(inputVal)}&callback=${callbackName}`;
-        document.body.appendChild(script);
-    }
 
-    // Hàm thực hiện sao chép dữ liệu nhanh
-    function copyToClipboard(text, successMessage) {
-        navigator.clipboard.writeText(text).then(() => {
-            alert(successMessage);
-        }).catch(() => {
-            const textarea = document.createElement("textarea");
-            textarea.value = text;
-            document.body.appendChild(textarea);
-            textarea.select();
-            document.execCommand("copy");
-            document.body.removeChild(textarea);
-            alert(successMessage);
-        });
+        } catch (error) {
+            alert("❌ LỖI KẾT NỐI: Không thể gửi dữ liệu tới Cloudflare Worker! Hãy kiểm tra mạng hoặc cấu hình CORS dấu sao (*) trên Worker.");
+        } finally {
+            saveBtn.disabled = false;
+            saveBtn.innerText = "BẤM ĐỂ LƯU";
+        }
     }
 </script>
 
