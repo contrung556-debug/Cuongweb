@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shopee Link Fetccher & Order Manager</title>
+    <style>
+        :root { --shopee-orange: #ff4500; --bg-gray: #f6f6f6; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: var(--bg-gray); margin: 0; padding: 15px; color: #333; }
+        .wrapper { max-width: 500px; margin: 0 auto; }
+        .card { background: white; border-radius: 14px; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.04); margin-bottom: 20px; box-sizing: border-box; text-align: center; }
+        h2 { margin-top: 0; color: var(--shopee-orange); font-size: 20px; font-weight: 700; margin-bottom: 15px; text-transform: uppercase; }
+        .input-group { text-align: left; margin-bottom: 12px; }
+        label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 5px; color: #555; }
+        input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 15px; outline: none; transition: 0.2s; }
+        input:focus { border-color: var(--shopee-orange); }
+        
+        .btn { width: 100%; padding: 12px; border: none; border-radius: 8px; font-size: 15px; font-weight: bold; cursor: pointer; transition: 0.2s; text-transform: uppercase; color: white; margin-bottom: 8px; }
+        .btn-orange { background: var(--shopee-orange); }
+        .btn-orange:active { background: #e03d00; }
+        .btn-green { background: #2ecc71; }
+        .btn-blue { background: #3498db; }
+        
+        /* Kết quả OTP */
+        .result-box { margin-top: 15px; border-left: 4px solid #2ecc71; padding: 12px; background: #fafafa; text-align: left; border-radius: 0 8px 8px 0; font-size: 14px; }
+        .result-item { margin-bottom: 6px; }
+        .bold-val { font-weight: bold; color: #111; word-break: break-all; }
+        .otp-display { font-size: 24px; font-weight: bold; color: var(--shopee-orange); letter-spacing: 1px; margin: 5px 0; }
+        
+        /* Danh sách đơn hàng */
+        .order-list { text-align: left; max-height: 250px; overflow-y: auto; margin-top: 15px; }
+        .order-item { background: #fbfbfb; border: 1px solid #eee; padding: 10px; border-radius: 8px; margin-bottom: 8px; font-size: 13px; }
+        .status-badge { display: inline-block; padding: 3px 6px; border-radius: 4px; font-size: 11px; font-weight: bold; margin-top: 5px; }
+        .status-shipping { background: #fff3cd; color: #856404; }
+        .status-success { background: #f8d7da; color: #721c24; }
+    </style>
+</head>
+<body>
+
+<div class="wrapper">
+
+    <!-- KHU VỰC 1: LẤY LINK XÁC THỰC / OTP NHANH -->
+    <div class="card">
+        <h2>Shopee Link Fetcher</h2>
+        <div class="input-group">
+            <label>Nhập tên hoặc địa chỉ Email:</label>
+            <input type="text" id="otp_email" placeholder="Ví dụ: squints_cutlers.5a">
+        </div>
+        <button class="btn btn-orange" onclick="layOtpNhanh()">Lấy Link Xác Thực / OTP</button>
+        
+        <!-- Hộp hiển thị kết quả quét nhanh -->
+        <div id="otpResultArea" style="display: none;" class="result-box">
+            <div class="result-item">📧 Email quét: <span id="res_email" class="bold-val"></span></div>
+            <div class="result-item">🔑 Mã OTP: <div id="res_otp" class="otp-display">⏳ Đang tải...</div></div>
+            <div class="result-item">⏰ Thời gian nhận thư: <span id="res_time" class="bold-val"></span></div>
+            <div class="result-item" style="margin-bottom: 12px;">🔗 Đường dẫn xác thực: <span id="res_link" class="bold-val"></span></div>
+            
+            <button id="btn_open_link" class="btn btn-green" style="display: none;">Mở Link</button>
+            <button id="btn_copy_link" class="btn btn-blue" style="display: none;">Copy Link</button>
+        </div>
+    </div>
+
+    <!-- KHU VỰC 2: NẠP ĐƠN HÀNG VÀ THEO DÕI GIAO THÀNH CÔNG (QUÉT NGẦM) -->
+    <div class="card">
+        <h2>Nạp Đơn Hàng Quét Ngầm</h2>
+        <div class="input-group">
+            <label>Mã đơn hàng Shopee:</label>
+            <input type="text" id="manager_order_id" placeholder="Ví dụ: 260908FD8YK34N">
+        </div>
+        <div class="input-group">
+            <label>Địa chỉ Email hòm thư:</label>
+            <input type="email" id="manager_email" placeholder="Ví dụ: snowy.eidolon_2m@icloud.com">
+        </div>
+        <button class="btn btn-orange" onclick="napDonQuetNg()()">Nạp Đơn Vào Hệ Thống</button>
+        
+        <div class="order-list">
+            <div style="font-weight: bold; font-size: 14px; border-bottom: 1px solid #ddd; padding-bottom: 4px; margin-bottom: 8px; color: #555;">📊 TIẾN ĐỘ THEO DÕI ĐƠN</div>
+            <div id="boxDanhSachDon">Đang tải danh sách...</div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    // Link kết nối trực tiếp đến hệ thống của bạn
+    const APPS_SCRIPT_URL = "https://google.com";
+    const CLOUDFLARE_URL = "https://workers.dev";
+
+    // ================= XỬ LÝ KHU VỰC 1: LẤY OTP QUA JSONP =================
+    function layOtpNhanh() {
+        const inputVal = document.getElementById('otp_email').value.trim();
+        if (!inputVal) { alert("Vui lòng điền thông tin email!"); return; }
+        
+        const resultArea = document.getElementById('otpResultArea');
+        const resOtp = document.getElementById('res_otp');
+        resultArea.style.display = "block";
+        resOtp.innerText = "⏳ Đang quét hòm thư...";
+        
+        // Tạo chuỗi gọi hàm Callback nhận kết quả (JSONP) để vượt rào bảo mật Vercel
+        const callbackName = "shopee_callback_" + Math.round(Math.random() * 100000);
+        window[callbackName] = function(data) {
+            // Xóa thẻ script sau khi nhận dữ liệu xong cho sạch web
+            document.body.removeChild(script);
+            delete window[callbackName];
+            
+            if (data.status === "error") {
+                resOtp.innerText = "❌ Lỗi";
+                alert(data.message);
+                return;
+            }
+            
+            // Đổ dữ liệu lên màn hình
+            document.getElementById('res_email').innerText = data.hide_email_tin;
+            document.getElementById('res_time').innerText = data.thoi_gian_nhan_thu;
+            document.getElementById('res_link').innerText = data.link_xac_thuc_tai_day;
+            
+            const btnOpen = document.getElementById('btn_open_link');
+            const btnCopy = document.getElementById('btn_copy_link');
+            
+            // Nếu có OTP, hiện OTP và ẩn các nút điều hướng link
+            if (data.otp && data.otp !== "Không có") {
+                resOtp.innerText = data.otp;
+                btnOpen.style.display = "none";
+                btnCopy.style.display = "none";
+            } else {
+                resOtp.innerText = "Chỉ có link";
+                // Cấu hình nút bấm mở link trực tiếp tab mới
+                btnOpen.style.display = "block";
+                btnOpen.onclick = function() { window.open(data.link_xac_thuc_tai_day, '_blank'); };
+                // Cấu hình nút copy nhanh
+                btnCopy.style.display = "block";
+                btnCopy.onclick = function() {
+                    navigator.clipboard.writeText(data.link_xac_thuc_tai_day);
+                    alert("Đã sao chép đường link xác thực!");
+                };
+            }
+        };
+        
+        // Tạo lệnh nhúng script gọi trực tiếp sang Google Apps Script của bạn
+        const script = document.createElement('script');
+        script.src = `${APPS_SCRIPT_URL}?hide=${encodeURIComponent(inputVal)}&callback=${callbackName}`;
+        document.body.appendChild(script);
+    }
+
+    // ================= XỬ LÝ KHU VỰC 2: QUẢN LÝ ĐƠN HÀNG CLOUDFLARE =================
+    async function napDonQuetNg() {
+        const orderId = document.getElementById('manager_order_id').value.trim();
+        const email = document.getElementById('manager_email').value.trim();
+        if (!orderId || !email) { alert("Vui lòng nhập đủ Mã đơn và Email!"); return; }
+
+        try {
+            const res = await fetch(`${CLOUDFLARE_URL}/add-order`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ order_id: orderId, email: email })
+            });
+            if (res.ok) {
+                alert("🎉 Nạp đơn thành công! Hệ thống bắt đầu theo dõi ngầm.");
+                document.getElementById('manager_order_id').value = "";
+                document.getElementById('manager_email').value = "";
+                taiDanhSachDon();
+            } else { alert("Lỗi khi nạp đơn!"); }
+        } catch (e) { alert("Lỗi kết nối Server Cloudflare!"); }
+    }
+
+    async function taiDanhSachDon() {
+        const box = document.getElementById('boxDanhSachDon');
+        try {
+            const res = await fetch(`${CLOUDFLARE_URL}/list-orders`);
+            const data = await res.json();
+            if (!data || data.length === 0) { box.innerHTML = "<div style='color:#999; text-align:center; padding:10px;'>Hàng đợi trống.</div>"; return; }
+            
+            let html = "";
+            data.forEach(item => {
+                let badgeClass = item.order_status === "SUCCESS" ? "status-success" : "status-shipping";
+                let badgeText = item.order_status === "SUCCESS" ? "✅ Đã nhận hàng" : "⏳ Chờ giao hàng";
+                html += `
+                    <div class="order-item">
+                        <div><b>📦 Đơn:</b> #${item.order_id}</div>
+                        <div style="color:#666; word-break:break-all;"><b>📧 Mail:</b> ${item.customer_email}</div>
+                        <div class="status-badge ${badgeClass}">${badgeText}</div>
+                    </div>
+                `;
+            });
