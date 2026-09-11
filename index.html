@@ -30,15 +30,22 @@
         .copy-otp-btn { background-color: #e67e22; }
         .otp-display { font-size: 22px; font-weight: bold; color: #ee4d2d; margin: 3px 0; text-align: center; }
         
-        /* CSS cho danh sách đơn hàng */
+        /* CSS cho danh sách đơn hàng & các nút hành động (Sửa / Xóa) */
         .order-table-container { margin-top: 10px; max-height: 250px; overflow-y: auto; border: 1px solid #eee; border-radius: 8px; padding: 8px; background: #fff; }
-        .order-card { padding: 10px; border-bottom: 1px solid #f0f0f0; font-size: 13px; text-align: left; }
+        .order-card { padding: 10px; border-bottom: 1px solid #f0f0f0; font-size: 13px; text-align: left; display: flex; justify-content: space-between; align-items: flex-start; }
         .order-card:last-child { border-bottom: none; }
+        .order-info { flex-grow: 1; padding-right: 8px; }
         .order-id { font-weight: bold; color: #ee4d2d; }
         .order-name { color: #333; font-weight: 600; margin: 3px 0; }
         .order-status { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: bold; }
         .status-pending { background: #fff3cd; color: #856404; }
         .status-done { background: #d4edda; color: #155724; }
+        .card-actions { display: flex; gap: 4px; flex-shrink: 0; }
+        .edit-btn, .delete-btn { color: white; border: none; border-radius: 4px; width: 26px; height: 26px; font-size: 12px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .edit-btn { background-color: #3498db; }
+        .edit-btn:active { background-color: #2980b9; }
+        .delete-btn { background-color: #ff4d4f; }
+        .delete-btn:active { background-color: #d9363e; }
     </style>
 </head>
 <body>
@@ -204,7 +211,7 @@
             document.getElementById("orderCodeInput").value = "";
             document.getElementById("productNameInput").value = "";
             document.getElementById("emailInput").value = "";
-            loadOrdersFromSupabase(); // Load lại danh sách ngay lập tức
+            loadOrdersFromSupabase();
         }
     }
 
@@ -215,7 +222,7 @@
         const { data, error } = await _supabase
             .from('shopee_orders')
             .select('*')
-            .order('created_at', { ascending: false }); // Lấy đơn mới nhất lên đầu
+            .order('created_at', { ascending: false });
 
         if (error) {
             container.innerHTML = `<div style="text-align: center; color: red; padding: 10px;">Lỗi tải dữ liệu</div>`;
@@ -234,14 +241,73 @@
             
             html += `
                 <div class="order-card">
-                    <div><span class="order-id">${order.order_code}</span> <span class="order-status ${statusClass}">${order.status || 'Đang chờ giao'}</span></div>
-                    <div class="order-name">📦 ${order.product_name}</div>
-                    <div style="font-size: 11px; color: #666;">📧 ${order.email} ${timeInfo}</div>
+                    <div class="order-info">
+                        <div><span class="order-id">${order.order_code}</span> <span class="order-status ${statusClass}">${order.status || 'Đang chờ giao'}</span></div>
+                        <div class="order-name">📦 ${order.product_name}</div>
+                        <div style="font-size: 11px; color: #666;">📧 ${order.email} ${timeInfo}</div>
+                    </div>
+                    <div class="card-actions">
+                        <button class="edit-btn" onclick="editOrder(${order.id}, '${order.order_code}', '${order.product_name.replace(/'/g, "\\'")}', '${order.email}')" title="Chỉnh sửa đơn hàng">✏️</button>
+                        <button class="delete-btn" onclick="deleteOrder(${order.id})" title="Xóa đơn hàng">✕</button>
+                    </div>
                 </div>
             `;
         });
 
         container.innerHTML = html;
+    }
+
+    // Hàm 4: Chỉnh sửa thông tin đơn hàng
+    async function editOrder(id, oldCode, oldName, oldEmail) {
+        let newCode = prompt("Nhập mã đơn hàng mới:", oldCode);
+        if (newCode === null) return; // Bấm Cancel thì thoát
+
+        let newName = prompt("Nhập tên sản phẩm mới:", oldName);
+        if (newName === null) return;
+
+        let newEmail = prompt("Nhập Email hòm thư mới:", oldEmail);
+        if (newEmail === null) return;
+
+        if (!newCode.trim() || !newName.trim() || !newEmail.trim()) {
+            alert("Các trường không được để trống!");
+            return;
+        }
+
+        const { error } = await _supabase
+            .from('shopee_orders')
+            .update({ 
+                order_code: newCode.trim(), 
+                product_name: newName.trim(), 
+                email: newEmail.trim() 
+            })
+            .eq('id', id);
+
+        if (error) {
+            console.error('Lỗi khi sửa:', error);
+            alert('Không thể cập nhật đơn hàng!');
+        } else {
+            alert('Cập nhật đơn hàng thành công!');
+            loadOrdersFromSupabase();
+        }
+    }
+
+    // Hàm 5: Xóa đơn hàng theo ID của bảng Supabase
+    async function deleteOrder(id) {
+        if (!confirm("Bạn có chắc chắn muốn xóa đơn hàng này khỏi danh sách không?")) {
+            return;
+        }
+
+        const { error } = await _supabase
+            .from('shopee_orders')
+            .delete()
+            .eq('id', id);
+
+        if (error) {
+            console.error('Lỗi khi xóa:', error);
+            alert('Không thể xóa đơn hàng này!');
+        } else {
+            loadOrdersFromSupabase();
+        }
     }
 
     function copyToClipboard(text, successMessage) {
