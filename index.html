@@ -308,11 +308,24 @@
                 }
                 
                 let actionButtonsHtml = '';
-                let otpDisplayHtml = data.otp;
+                let otpSectionHtml = '';
+                
+                // Nếu có OTP thì hiển thị khối OTP
                 if (data.otp && data.otp !== "Không có") {
+                    otpSectionHtml = `
+                        <div class="data-item">
+                            <span class="data-label">OTP:</span> 
+                            <div class="otp-display">${data.otp}</div>
+                        </div>
+                    `;
                     actionButtonsHtml += `<button class="copy-otp-btn" onclick="copyToClipboard('${data.otp}', 'Đã copy mã OTP thành công!')">COPY OTP</button>`;
-                } else if (data.link_xac_thuc_tai_day && data.link_xac_thuc_tai_day !== "Không có") {
-                    otpDisplayHtml = "Chỉ có link";
+                }
+
+                // Nếu có link thì hiển thị các nút thao tác liên quan đến link
+                if (data.link_xac_thuc_tai_day && data.link_xac_thuc_tai_day !== "Không có") {
+                    if (!data.otp || data.otp === "Không có") {
+                        otpSectionHtml = `<div class="data-item" style="text-align: center; color: #e67e22; font-weight: bold; margin: 8px 0;">🔗 Thư này xác thực bằng đường dẫn</div>`;
+                    }
                     actionButtonsHtml += `
                         <a href="${data.link_xac_thuc_tai_day}" target="_blank" class="verify-btn">MỞ LINK</a>
                         <button class="copy-btn" onclick="copyToClipboard('${data.link_xac_thuc_tai_day}', 'Đã copy link thành công!')">COPY LINK</button>
@@ -321,7 +334,7 @@
                 
                 resultBox.innerHTML = `
                     <div class="data-item"><span class="data-label">Email quét:</span> ${data.hide_email_tin}</div>
-                    <div class="data-item"><span class="data-label">Mã số:</span> <div class="otp-display">${otpDisplayHtml}</div></div>
+                    ${otpSectionHtml}
                     <div class="data-item"><span class="data-label">Thời gian:</span> <span style="color:#d35400; font-weight:bold;">${displayTime}</span></div>
                     <div class="action-buttons">${actionButtonsHtml}</div>
                 `;
@@ -337,7 +350,6 @@
         document.body.appendChild(script);
     }
 
-    // Nạp đơn (Đính kèm username của người đang đăng nhập)
     async function saveShopeeOrder() {
         let orderCode = document.getElementById("orderCodeInput").value.trim();
         let productName = document.getElementById("productNameInput").value.trim();
@@ -361,7 +373,7 @@
                     product_name: productName,
                     email: emailInput, 
                     status: 'Đang chờ giao',
-                    username: currentUsername // Lưu gán vào tài khoản hiện tại
+                    username: currentUsername 
                 }
             ]);
 
@@ -380,7 +392,6 @@
         }
     }
 
-    // Chỉ tải các đơn hàng thuộc về username đang đăng nhập
     async function loadOrdersFromSupabase() {
         const container = document.getElementById("orderListContainer");
         const currentUsername = localStorage.getItem("shopee_logged_user");
@@ -388,7 +399,7 @@
         const { data, error } = await _supabase
             .from('shopee_orders')
             .select('*')
-            .eq('username', currentUsername) // Lọc riêng theo tài khoản
+            .eq('username', currentUsername) 
             .order('created_at', { ascending: false });
 
         if (error) {
