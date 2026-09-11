@@ -82,7 +82,7 @@
 
 <div class="container">
     
-    <!-- PHẦN 1: SHOPEE LINK FETCHER (Lấy OTP / Link xác thực) -->
+    <!-- PHẦN 1: SHOPEE LINK FETCHER -->
     <div class="section-box">
         <h3>SHOPEE LINK FETCHER</h3>
         <label>Nhập tên hoặc địa chỉ Email:</label>
@@ -91,14 +91,17 @@
         <div id="fetchResult" style="margin-top: 10px; font-size: 13px;"></div>
     </div>
 
-    <!-- PHẦN 2: NẠP ĐƠN QUÉT NGẨM & THEO DÕI -->
+    <!-- PHẦN 2: NẠP ĐƠN QUÉT NGẨM (Đã bổ sung ô Tên sản phẩm) -->
     <div class="section-box">
         <h3>NẠP ĐƠN QUÉT NGẨM</h3>
         
         <label>Mã đơn hàng Shopee:</label>
         <input type="text" id="inputOrderCode" placeholder="Ví dụ: 260908FD8YK34N">
 
-        <label>Địa chỉ Email hòm thư:</label>
+        <label>Tên sản phẩm:</label>
+        <input type="text" id="inputProductName" placeholder="Ví dụ: Nước giặt MaxKleen">
+
+        <label>Địa chỉ Email hòm thư (iCloud):</label>
         <input type="text" id="inputEmail" placeholder="Ví dụ: snowy.eidolon_2m@icloud.com">
 
         <button class="btn-main" onclick="addNewOrder()">Nạp Đơn Vào Hệ Thống</button>
@@ -125,9 +128,10 @@
     let allOrdersData = [];
     let currentUsername = localStorage.getItem("shopee_logged_user") || "Cuong123";
 
-    // Hàm nạp đơn mới vào Supabase
+    // Hàm nạp đơn mới vào Supabase (Đã lưu thêm product_name)
     async function addNewOrder() {
         const orderCode = document.getElementById("inputOrderCode").value.trim();
+        const productName = document.getElementById("inputProductName").value.trim();
         const email = document.getElementById("inputEmail").value.trim();
 
         if (!orderCode || !email) {
@@ -138,7 +142,13 @@
         const { data, error } = await _supabase
             .from('shopee_orders')
             .insert([
-                { order_code: orderCode, email: email, username: currentUsername, status: 'Đang chờ giao' }
+                { 
+                    order_code: orderCode, 
+                    product_name: productName || 'Đơn hàng Shopee', 
+                    email: email, 
+                    username: currentUsername, 
+                    status: 'Đang chờ giao' 
+                }
             ]);
 
         if (error) {
@@ -146,6 +156,7 @@
         } else {
             alert("Đã nạp đơn hàng thành công vào hệ thống!");
             document.getElementById("inputOrderCode").value = '';
+            document.getElementById("inputProductName").value = '';
             document.getElementById("inputEmail").value = '';
             loadOrdersFromSupabase();
         }
@@ -216,7 +227,6 @@
         renderOrders(filtered);
     }
 
-    // Hàm giả lập nút lấy OTP/Link phía trên
     function fetchOtpLink() {
         let val = document.getElementById("fetchInputEmail").value;
         if (!val) {
@@ -226,7 +236,6 @@
         document.getElementById("fetchResult").innerHTML = `<span style="color: #27ae60;">Đang tìm link xác thực cho ${val}...</span>`;
     }
 
-    // Tự động tải danh sách khi mở trang
     loadOrdersFromSupabase();
 </script>
 
