@@ -50,10 +50,10 @@
 </div>
 
 <script>
-    // Điền chính xác đường link Web App Apps Script mới chứa cấu trúc phân tầng ưu tiên của bạn
-    const webAppUrl = "https://google.com";
+    // 🔥 ĐÃ CẬP NHẬT ĐƯỜNG LINK WEB APP APPS SCRIPT MỚI CỦA BẠN VÀO ĐÂY
+    const webAppUrl = "https://script.google.com/macros/s/AKfycbwk0RSNFUrzaU7nSlNgAgazt3BWUNR-meYBYvJcSkJIFxQe4XiDfGd3FsfcSTWzOLk/exec";
 
-    // Hàm gọi lấy dữ liệu trực tiếp sang Apps Script qua JSONP Callback chống nghẽn mạng
+    // Hàm gọi lấy dữ liệu qua cơ chế JSONP Callback đồng bộ mượt mà
     function fetchVerificationLink() {
         let inputVal = document.getElementById("hideInput").value.trim();
         const fetchBtn = document.getElementById("fetchBtn");
@@ -69,17 +69,17 @@
             inputVal = inputVal.substring(0, inputVal.toLowerCase().lastIndexOf("@icloud.com"));
         }
         
-        // Kích hoạt giao diện Loading
+        // Hiện trạng thái Loading
         fetchBtn.disabled = true;
         loadingBox.style.display = "block";
         resultBox.style.display = "none";
         resultBox.className = "result-box";
         
-        // Khởi tạo tên hàm Callback ngẫu nhiên độc lập
+        // Tạo chuỗi tên hàm Callback ngẫu nhiên độc lập chống đơ nút bấm
         const callbackName = "shopee_callback_" + Math.round(Math.random() * 100000);
         
         window[callbackName] = function(data) {
-            // Tự động gỡ thẻ script ngay khi hứng dữ liệu thành công để tránh đơ nút
+            // Tự động xóa thẻ script ngay khi nhận được data để giải phóng nút bấm cho lần sau
             const oldScript = document.getElementById(callbackName);
             if (oldScript) { oldScript.parentNode.removeChild(oldScript); }
             delete window[callbackName];
@@ -99,14 +99,14 @@
                 let actionButtonsHtml = '';
                 let otpDisplayHtml = data.otp;
 
-                // LOGIC PHÂN TẦNG ƯU TIÊN HIỂN THỊ NÚT BẤM VÀ GIÁ TRỊ TRÊN MÀN HÌNH WEB
+                // CHUỖI PHÂN PHỐI HIỂN THỊ THEO ĐÚNG TẦNG ƯU TIÊN TRÊN GIAO DIỆN
                 if (data.otp && data.otp !== "Không có") {
-                    // Trường hợp có OTP: Chỉ hiện nút copy OTP, ẩn các nút liên quan đến Link
+                    // Nếu thư có số OTP: Hiện nút copy OTP, ẩn tất cả nút liên quan đến Link
                     actionButtonsHtml += `
                         <button class="copy-otp-btn" onclick="copyToClipboard('${data.otp}', 'Đã copy mã OTP ${data.otp} thành công!')">COPY OTP</button>
                     `;
                 } else if (data.link_xac_thuc_tai_day && data.link_xac_thuc_tai_day !== "Không có") {
-                    // Trường hợp chỉ có Link (Link Shopee ngắn hoặc Link Sendgrid dài): Hiện nút Mở và Copy Link
+                    // Nếu không có OTP mà có Link (Link Shopee ngắn hoặc Link Sendgrid dài): Hiện nút Mở & Copy Link
                     otpDisplayHtml = "Chỉ có link";
                     actionButtonsHtml += `
                         <a href="${data.link_xac_thuc_tai_day}" target="_blank" class="verify-btn">MỞ LINK</a>
@@ -133,14 +133,14 @@
             }
         };
         
-        // Khởi chạy nhúng thẻ script tạo lệnh Fetch dữ liệu JSONP
+        // Chèn thẻ Script truyền dữ liệu JSONP
         const script = document.createElement('script');
         script.id = callbackName;
         script.src = `${webAppUrl}?hide=${encodeURIComponent(inputVal)}&callback=${callbackName}`;
         document.body.appendChild(script);
     }
 
-    // Hàm thực hiện lệnh copy dữ liệu nhanh
+    // Hàm thực hiện sao chép dữ liệu nhanh
     function copyToClipboard(text, successMessage) {
         navigator.clipboard.writeText(text).then(() => {
             alert(successMessage);
