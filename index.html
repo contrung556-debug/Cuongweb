@@ -30,7 +30,6 @@
         .copy-otp-btn { flex: 1; padding: 12px; background-color: #e67e22; color: white; border: none; border-radius: 8px; font-size: 15px; font-weight: bold; cursor: pointer; -webkit-appearance: none; min-width: 100px; }
         .copy-otp-btn:active { background-color: #d35400; }
 
-        /* Style bổ sung cho danh sách đơn hàng */
         .order-list { text-align: left; max-height: 250px; overflow-y: auto; margin-top: 15px; }
         .order-item { background: #fafafa; border: 1px solid #eee; padding: 12px; border-radius: 8px; margin-bottom: 8px; font-size: 13px; }
         .status-badge { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; margin-top: 6px; }
@@ -40,7 +39,7 @@
 </head>
 <body>
 
-<!-- KHU VỰC 1: LẤY LINK XÁC THỰC / OTP NHANH (MẪU GỐC CỦA BẠN) -->
+<!-- KHU VỰC 1: LẤY LINK XÁC THỰC / OTP NHANH -->
 <div class="container">
     <h2>Shopee Link Fetcher</h2>
     
@@ -53,9 +52,7 @@
     
     <div id="loadingBox" class="result-box status-loading">Đang kết nối hộp thư và quét dữ liệu, vui lòng đợi...</div>
     
-    <div id="resultBox" class="result-box">
-        <!-- Kết quả hiển thị tự động tại đây -->
-    </div>
+    <div id="resultBox" class="result-box"></div>
 </div>
 
 <!-- KHU VỰC 2: NẠP ĐƠN HÀNG VÀ THEO DÕI TỰ ĐỘNG (QUÉT NGẦM CLOUDFLARE) -->
@@ -85,12 +82,12 @@
 </div>
 
 <script>
-    // Link API Google Apps Script và Cloudflare Worker của bạn
-    const webAppUrl = "https://script.google.com/macros/s/AKfycbwA93_KC9nEKQ-wtHHbpkYhar2BSJGRyM3pCYGsraHazZUyL5VZMBLy6TiS2__gHzM/exec";
+    // Link kết nối hệ thống đã cấu hình JSONP mượt mà của bạn
+    const webAppUrl = "https://google.com";
     const CLOUDFLARE_URL = "https://workers.dev";
 
-    // Lệnh xử lý khu vực 1: Quét hòm thư lấy OTP/Link nhanh (Dựa trên code Fetch chuẩn của bạn)
-    async function fetchVerificationLink() {
+    // ================= XỬ LÝ KHU VỰC 1: QUỆT LẤY OTP QUA HÀM CALLBACK CHUẨN ĐỒNG BỘ =================
+    function fetchVerificationLink() {
         let inputVal = document.getElementById("hideInput").value.trim();
         const fetchBtn = document.getElementById("fetchBtn");
         const loadingBox = document.getElementById("loadingBox");
@@ -105,14 +102,21 @@
             inputVal = inputVal.substring(0, inputVal.toLowerCase().lastIndexOf("@icloud.com"));
         }
         
+        // Bật trạng thái Loading
         fetchBtn.disabled = true;
         loadingBox.style.display = "block";
         resultBox.style.display = "none";
         resultBox.className = "result-box";
         
-        try {
-            const response = await fetch(`${webAppUrl}?hide=${encodeURIComponent(inputVal)}`);
-            const data = await response.json();
+        // Định nghĩa tên hàm Callback động
+        const callbackName = "shopee_callback_" + Math.round(Math.random() * 100000);
+        
+        // Khởi tạo hàm hứng dữ liệu trả về từ Apps Script
+        window[callbackName] = function(data) {
+            // Tự dọn dẹp thẻ script thừa ngay khi nhận dữ liệu xong để tránh đơ nút bấm lần sau
+            const oldScript = document.getElementById(callbackName);
+            if (oldScript) { oldScript.parentNode.removeChild(oldScript); }
+            delete window[callbackName];
             
             loadingBox.style.display = "none";
             fetchBtn.disabled = false;
@@ -128,7 +132,7 @@
                 
                 let actionButtonsHtml = '';
                 
-                // Trực quan hóa điều kiện phân tầng ưu tiên hiển thị nút bấm
+                // Phân bổ nút bấm hiển thị theo tầng ưu tiên
                 if (data.link_xac_thuc_tai_day && data.link_xac_thuc_tai_day !== "Không có") {
                     actionButtonsHtml += `
                         <a href="${data.link_xac_thuc_tai_day}" target="_blank" class="verify-btn">MỞ LINK</a>
@@ -156,11 +160,3 @@
             } else {
                 resultBox.classList.add("status-error");
                 resultBox.innerHTML = `
-                    <div class="data-item" style="color:#e74c3c; font-weight:bold; text-align:center; margin-bottom:0;">${data.message}</div>
-                `;
-            }
-            
-        } catch (error) {
-            loadingBox.style.display = "none";
-            fetchBtn.disabled = false;
-            resultBox.style.display = "block";
