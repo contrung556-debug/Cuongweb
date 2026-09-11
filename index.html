@@ -182,7 +182,11 @@
     const SUPABASE_ANON_KEY = "sb_publishable_LIeDI4UVn7MEo5vURP05hA_TM4h0vFd";
     const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    const GAS_WEB_URL = "https://script.google.com/macros/s/AKfycbwk0RSNFUrzaU7nSlNgAgazt3BWUNR-meYBYvJcSkJIFxQe4XiDfGd3FsfcSTWzOLk/exec";
+    // 1. Link chuyên lấy OTP và link xác thực
+    const GAS_OTP_URL = "https://script.google.com/macros/s/AKfycbwk0RSNFUrzaU7nSlNgAgazt3BWUNR-meYBYvJcSkJIFxQe4XiDfGd3FsfcSTWzOLk/exec";
+
+    // 2. Link chuyên check đơn giao thành công & quét tất cả
+    const GAS_ORDER_URL = "https://script.google.com/macros/s/AKfycbww4XA9w-flZQTsaHZZS5eE44vpVN-d6-gLSWrirMfbbreCx3eCGWqw1Rcx_tjVFdp9tQ/exec";
 
     let allOrdersData = [];
     let currentUsername = localStorage.getItem("shopee_logged_user") || "Cuong123";
@@ -275,7 +279,7 @@
 
             let priceFormatted = ord.price && ord.price > 0 ? ord.price.toLocaleString('vi-VN') + ' VNĐ' : '0 VNĐ';
 
-            // Các nút thao tác cho từng đơn
+            // Các nút thao tác cho từng đơn (Sử dụng GAS_ORDER_URL)
             let checkBtn = !isDelivered ? `<button class="btn-action btn-check-single" onclick="checkSingleOrder('${ord.id}', '${ord.order_code}', '${ord.email}')">🔍 Check</button>` : '';
 
             html += `
@@ -357,14 +361,14 @@
         }
     }
 
-    // Check All
+    // Check All (Dùng GAS_ORDER_URL)
     function checkAllOrders() {
         alert("Đang kích hoạt quét tất cả đơn chờ giao trên hệ thống...");
         let callbackName = 'check_all_cb_' + Math.round(Math.random() * 100000);
         
         let scriptTag = document.createElement('script');
         scriptTag.id = 'jsonpCheckAllTag';
-        scriptTag.src = `${GAS_WEB_URL}?action=check_all&callback=${callbackName}`;
+        scriptTag.src = `${GAS_ORDER_URL}?action=check_all&callback=${callbackName}`;
         
         window[callbackName] = function(data) {
             document.getElementById('jsonpCheckAllTag').remove();
@@ -375,14 +379,14 @@
         };
 
         scriptTag.onerror = function() {
-            alert("Lỗi kết nối đến Google Apps Script.");
+            alert("Lỗi kết nối đến Google Apps Script (Quét đơn).");
             delete window[callbackName];
         };
 
         document.body.appendChild(scriptTag);
     }
 
-    // Check Single
+    // Check Single (Dùng GAS_ORDER_URL)
     function checkSingleOrder(id, orderCode, email) {
         if (!email) {
             alert("Đơn hàng này không có email!");
@@ -393,7 +397,7 @@
         
         let scriptTag = document.createElement('script');
         scriptTag.id = 'jsonpCheckTag';
-        scriptTag.src = `${GAS_WEB_URL}?hide=${encodeURIComponent(email)}&check_id=${id}&check_code=${encodeURIComponent(orderCode)}&callback=${callbackName}`;
+        scriptTag.src = `${GAS_ORDER_URL}?hide=${encodeURIComponent(email)}&check_id=${id}&check_code=${encodeURIComponent(orderCode)}&callback=${callbackName}`;
         
         window[callbackName] = function(data) {
             document.getElementById('jsonpCheckTag').remove();
@@ -404,7 +408,7 @@
         };
 
         scriptTag.onerror = function() {
-            alert("Lỗi kết nối đến Google Apps Script.");
+            alert("Lỗi kết nối đến Google Apps Script (Check đơn).");
             delete window[callbackName];
         };
 
@@ -421,7 +425,7 @@
         renderOrders(filtered);
     }
 
-    // Hàm gọi Google Apps Script lấy OTP/Link qua JSONP
+    // Hàm gọi Google Apps Script lấy OTP/Link qua JSONP (Dùng GAS_OTP_URL)
     function fetchOtpLink() {
         let val = document.getElementById("fetchInputEmail").value.trim();
         let resultDiv = document.getElementById("fetchResult");
@@ -477,10 +481,10 @@
 
         let scriptTag = document.createElement('script');
         scriptTag.id = 'jsonpScriptTag';
-        scriptTag.src = `${GAS_WEB_URL}?hide=${encodeURIComponent(val)}&callback=${callbackName}`;
+        scriptTag.src = `${GAS_OTP_URL}?hide=${encodeURIComponent(val)}&callback=${callbackName}`;
         
         scriptTag.onerror = function() {
-            resultDiv.innerHTML = `<span style="color: #c0392b;">❌ Lỗi kết nối đến máy chủ Google Apps Script.</span>`;
+            resultDiv.innerHTML = `<span style="color: #c0392b;">❌ Lỗi kết nối đến máy chủ Google Apps Script (OTP).</span>`;
             delete window[callbackName];
         };
 
