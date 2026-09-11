@@ -91,7 +91,7 @@
         <div id="fetchResult" style="margin-top: 10px; font-size: 13px;"></div>
     </div>
 
-    <!-- PHẦN 2: NẠP ĐƠN QUÉT NGẨM (Đã bổ sung ô Tên sản phẩm) -->
+    <!-- PHẦN 2: NẠP ĐƠN QUÉT NGẨM -->
     <div class="section-box">
         <h3>NẠP ĐƠN QUÉT NGẨM</h3>
         
@@ -128,7 +128,7 @@
     let allOrdersData = [];
     let currentUsername = localStorage.getItem("shopee_logged_user") || "Cuong123";
 
-    // Hàm nạp đơn mới vào Supabase (Đã lưu thêm product_name)
+    // Hàm nạp đơn mới vào Supabase
     async function addNewOrder() {
         const orderCode = document.getElementById("inputOrderCode").value.trim();
         const productName = document.getElementById("inputProductName").value.trim();
@@ -227,13 +227,32 @@
         renderOrders(filtered);
     }
 
-    function fetchOtpLink() {
-        let val = document.getElementById("fetchInputEmail").value;
+    // Hàm gọi Google Apps Script Web App lấy OTP/Link thực tế
+    async function fetchOtpLink() {
+        let val = document.getElementById("fetchInputEmail").value.trim();
+        let resultDiv = document.getElementById("fetchResult");
+        
         if (!val) {
             alert("Vui lòng nhập tên hoặc email để lấy link!");
             return;
         }
-        document.getElementById("fetchResult").innerHTML = `<span style="color: #27ae60;">Đang tìm link xác thực cho ${val}...</span>`;
+
+        resultDiv.innerHTML = `<span style="color: #e67e22;">⏳ Đang kết nối lấy link xác thực...</span>`;
+
+        try {
+            const GAS_URL = "https://script.google.com/macros/s/AKfycbwk0RSNFUrzaU7nSlNgAgazt3BWUNR-meYBYvJcSkJIFxQe4XiDfGd3FsfcSTWzOLk/exec?email=" + encodeURIComponent(val);
+            
+            let response = await fetch(GAS_URL);
+            let data = await response.json();
+
+            if (data.success || data.link || data.otp) {
+                resultDiv.innerHTML = `<span style="color: #27ae60; font-weight: bold;">✅ Kết quả: ${data.message || data.link || data.otp}</span>`;
+            } else {
+                resultDiv.innerHTML = `<span style="color: #c0392b;">⚠️ Không tìm thấy link hoặc OTP phù hợp.</span>`;
+            }
+        } catch (err) {
+            resultDiv.innerHTML = `<span style="color: #c0392b;">❌ Lỗi kết nối tới máy chủ GAS.</span>`;
+        }
     }
 
     loadOrdersFromSupabase();
