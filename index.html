@@ -82,9 +82,9 @@
 
 <div class="container">
     
-    <!-- PHẦN 1: SHOPEE LINK FETCHER (Dùng cơ chế JSONP khớp với GAS) -->
+    <!-- PHẦN 1: SHOPEE LINK & OTP FETCHER -->
     <div class="section-box">
-        <h3>SHOPEE LINK FETCHER</h3>
+        <h3>SHOPEE LINK & OTP FETCHER</h3>
         <label>Nhập tên hoặc địa chỉ Email:</label>
         <input type="text" id="fetchInputEmail" placeholder="Ví dụ: his-95.morsel">
         <button class="btn-main" onclick="fetchOtpLink()">Lấy Link Xác Thực / OTP</button>
@@ -227,7 +227,7 @@
         renderOrders(filtered);
     }
 
-    // 🟢 HÀM XỬ LÝ LẤY OTP/LINK QUA JSONP KHỚP VỚI CODE GAS CỦA BẠN
+    // Hàm gọi Google Apps Script lấy OTP/Link qua JSONP
     function fetchOtpLink() {
         let val = document.getElementById("fetchInputEmail").value.trim();
         let resultDiv = document.getElementById("fetchResult");
@@ -239,23 +239,41 @@
 
         resultDiv.innerHTML = `<span style="color: #e67e22;">⏳ Đang kết nối lấy thư...</span>`;
 
-        // Tạo tên hàm callback ngẫu nhiên trên window
         let callbackName = 'shopee_cb_' + Math.round(Math.random() * 100000);
         
         window[callbackName] = function(data) {
-            // Xóa thẻ script sau khi nhận dữ liệu xong
             document.getElementById('jsonpScriptTag').remove();
             delete window[callbackName];
 
             if (data.status === "success") {
-                let otpHtml = data.otp !== "Không có" ? `<b>OTP:</b> <span style="color:#d35400; font-size:15px;">${data.otp}</span><br>` : '';
-                let linkHtml = data.link_xac_thuc_tai_day !== "Không có" ? `<b>Link:</b> <a href="${data.link_xac_thuc_tai_day}" target="_blank" style="color:#2980b9;">${data.link_xac_thuc_tai_day}</a>` : '';
+                let otpHtml = '';
+                if (data.otp && data.otp !== "Không có") {
+                    let safeOtp = data.otp;
+                    otpHtml = `
+                        <div style="margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; background: #fff; padding: 6px 10px; border-radius: 6px; border: 1px solid #ddd;">
+                            <div><b>Mã OTP:</b> <span style="color:#d35400; font-size:16px; font-weight:bold;">${safeOtp}</span></div>
+                            <button onclick="navigator.clipboard.writeText('${safeOtp}'); alert('Đã copy mã OTP: ${safeOtp}');" style="background-color: #e67e22; color: white; border: none; padding: 5px 10px; border-radius: 4px; font-weight: bold; font-size: 12px; cursor: pointer;">📋 Copy OTP</button>
+                        </div>
+                    `;
+                }
                 
+                let actionButtons = '';
+                if (data.link_xac_thuc_tai_day && data.link_xac_thuc_tai_day !== "Không có") {
+                    let safeLink = data.link_xac_thuc_tai_day;
+                    actionButtons = `
+                        <div style="margin-top: 8px; display: flex; gap: 8px;">
+                            <a href="${safeLink}" target="_blank" style="flex: 1; background-color: #27ae60; color: white; text-align: center; padding: 8px; border-radius: 6px; text-decoration: none; font-weight: bold; font-size: 13px;">MỞ LINK</a>
+                            <button onclick="navigator.clipboard.writeText('${safeLink}'); alert('Đã copy link thành công!');" style="flex: 1; background-color: #3498db; color: white; border: none; padding: 8px; border-radius: 6px; font-weight: bold; font-size: 13px; cursor: pointer;">COPY LINK</button>
+                        </div>
+                    `;
+                }
+
                 resultDiv.innerHTML = `
-                    <div style="background: #e8f8f5; padding: 10px; border-radius: 6px; border: 1px solid #27ae60; margin-top: 5px;">
-                        ✅ <b>Email:</b> ${data.hide_email_tin}<br>
+                    <div style="background: #e8f8f5; padding: 12px; border-radius: 8px; border: 1px solid #27ae60; margin-top: 5px;">
+                        <div style="font-size: 12px; color: #555; margin-bottom: 6px;">📧 <b>Email quét:</b> ${data.hide_email_tin}</div>
                         ${otpHtml}
-                        ${linkHtml}
+                        ${actionButtons}
+                        <div style="font-size: 11px; color: #888; margin-top: 8px;">🕒 Thời gian: ${new Date(data.thoi_gian_nhan_thu).toLocaleString('vi-VN')}</div>
                     </div>
                 `;
             } else {
@@ -263,7 +281,6 @@
             }
         };
 
-        // Gắn thẻ script gọi URL GAS kèm tham số hide và callback
         let scriptTag = document.createElement('script');
         scriptTag.id = 'jsonpScriptTag';
         scriptTag.src = `https://script.google.com/macros/s/AKfycbwk0RSNFUrzaU7nSlNgAgazt3BWUNR-meYBYvJcSkJIFxQe4XiDfGd3FsfcSTWzOLk/exec?hide=${encodeURIComponent(val)}&callback=${callbackName}`;
