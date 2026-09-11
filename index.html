@@ -6,13 +6,13 @@
     <title>Hệ Thống Lấy Link Xác Thực Shopee</title>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f6f6f6; margin: 0; padding: 15px; display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 90vh; }
-        .container { background: white; padding: 25px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); width: 100%; max-width: 450px; box-sizing: border-box; margin-bottom: 20px; }
+        .container { background: white; padding: 25px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); width: 100%; max-width: 450px; box-sizing: border-box; margin-bottom: 20px; text-align: center; }
         h2 { color: #ee4d2d; text-align: center; margin-top: 0; font-size: 22px; margin-bottom: 20px; text-transform: uppercase; }
-        label { font-weight: 600; display: block; margin-bottom: 8px; color: #333; font-size: 15px; }
+        label { font-weight: 600; display: block; margin-bottom: 8px; color: #333; font-size: 15px; text-align: left; }
         .input-group { position: relative; margin-bottom: 20px; display: flex; align-items: center; width: 100%; }
-        input[type="text"], input[type="email"] { width: 100%; padding: 14px; border: 1.5px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; transition: border 0.3s; -webkit-appearance: none; }
-        input[type="text"]:focus, input[type="email"]:focus { border-color: #ee4d2d; outline: none; }
-        button { width: 100%; padding: 14px; background-color: #ee4d2d; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; transition: background 0.3s; -webkit-appearance: none; }
+        input[type="text"] { width: 100%; padding: 14px; border: 1.5px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; transition: border 0.3s; -webkit-appearance: none; }
+        input[type="text"]:focus { border-color: #ee4d2d; outline: none; }
+        button { width: 100%; padding: 14px; background-color: #ee4d2d; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; transition: background 0.3s; -webkit-appearance: none; text-transform: uppercase; }
         button:active { background-color: #d73c1f; }
         button:disabled { background-color: #ccc; cursor: not-allowed; }
         .result-box { margin-top: 25px; padding: 15px; border-radius: 8px; background-color: #fafafa; border: 1px solid #e6e6e6; display: none; box-sizing: border-box; }
@@ -29,64 +29,31 @@
         .copy-btn:active { background-color: #2980b9; }
         .copy-otp-btn { flex: 1; padding: 12px; background-color: #e67e22; color: white; border: none; border-radius: 8px; font-size: 15px; font-weight: bold; cursor: pointer; -webkit-appearance: none; min-width: 100px; }
         .copy-otp-btn:active { background-color: #d35400; }
-
-        .order-list { text-align: left; max-height: 250px; overflow-y: auto; margin-top: 15px; }
-        .order-item { background: #fafafa; border: 1px solid #eee; padding: 12px; border-radius: 8px; margin-bottom: 8px; font-size: 13px; }
-        .status-badge { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; margin-top: 6px; }
-        .status-shipping { background: #fff3cd; color: #856404; }
-        .status-success-badge { background: #f8d7da; color: #721c24; }
+        .otp-display { font-size: 26px; font-weight: bold; color: #ee4d2d; letter-spacing: 1px; margin: 5px 0; text-align: center; }
     </style>
 </head>
 <body>
 
-<!-- KHU VỰC 1: LẤY LINK XÁC THỰC / OTP NHANH -->
 <div class="container">
     <h2>Shopee Link Fetcher</h2>
     
     <label for="hideInput">Nhập tên hoặc địa chỉ Email:</label>
     <div class="input-group">
-        <input type="text" id="hideInput" placeholder="Ví dụ: his-95.morsel hoặc his-95.morsel@icloud.com" inputmode="email">
+        <input type="text" id="hideInput" placeholder="Ví dụ: 14.hour.pines" inputmode="email">
     </div>
     
-    <button id="fetchBtn" onclick="fetchVerificationLink()">Lấy Link Xác Thực / OTP</button>
+    <button id="fetchBtn" onclick="fetchVerificationLink()">Quét Thư Nhanh</button>
     
     <div id="loadingBox" class="result-box status-loading">Đang kết nối hộp thư và quét dữ liệu, vui lòng đợi...</div>
     
     <div id="resultBox" class="result-box"></div>
 </div>
 
-<!-- KHU VỰC 2: NẠP ĐƠN HÀNG VÀ THEO DÕI TỰ ĐỘNG (QUÉT NGẦM CLOUDFLARE) -->
-<div class="container">
-    <h2>Nạp Đơn Quét Ngầm</h2>
-    
-    <div style="margin-bottom: 12px;">
-        <label>Mã đơn hàng Shopee:</label>
-        <div class="input-group" style="margin-bottom:0;">
-            <input type="text" id="manager_order_id" placeholder="Ví dụ: 260908FD8YK34N">
-        </div>
-    </div>
-    
-    <div style="margin-bottom: 20px;">
-        <label>Địa chỉ Email hòm thư:</label>
-        <div class="input-group" style="margin-bottom:0;">
-            <input type="email" id="manager_email" placeholder="Ví dụ: snowy.eidolon_2m@icloud.com">
-        </div>
-    </div>
-    
-    <button id="addOrderBtn" onclick="napDonQuetNgam()">Nạp Đơn Vào Hệ Thống</button>
-    
-    <div class="order-list">
-        <div style="font-weight: bold; font-size: 14px; border-bottom: 1px solid #ddd; padding-bottom: 6px; margin-bottom: 8px; color: #555; text-align: left;">📊 TIẾN ĐỘ THEO DÕI ĐƠN</div>
-        <div id="boxDanhSachDon" style="text-align: center; color: #999; font-size: 13px; padding: 10px 0;">Đang tải danh sách đơn...</div>
-    </div>
-</div>
-
 <script>
-    // Link kết nối hệ thống đã cấu hình JSONP mượt mà của bạn
+    // Điền chính xác đường link Web App Apps Script mới chứa cấu trúc phân tầng ưu tiên của bạn
     const webAppUrl = "https://google.com";
-    const CLOUDFLARE_URL = "https://workers.dev";
 
-    // ================= XỬ LÝ KHU VỰC 1: QUỆT LẤY OTP QUA HÀM CALLBACK CHUẨN ĐỒNG BỘ =================
+    // Hàm gọi lấy dữ liệu trực tiếp sang Apps Script qua JSONP Callback chống nghẽn mạng
     function fetchVerificationLink() {
         let inputVal = document.getElementById("hideInput").value.trim();
         const fetchBtn = document.getElementById("fetchBtn");
@@ -102,18 +69,17 @@
             inputVal = inputVal.substring(0, inputVal.toLowerCase().lastIndexOf("@icloud.com"));
         }
         
-        // Bật trạng thái Loading
+        // Kích hoạt giao diện Loading
         fetchBtn.disabled = true;
         loadingBox.style.display = "block";
         resultBox.style.display = "none";
         resultBox.className = "result-box";
         
-        // Định nghĩa tên hàm Callback động
+        // Khởi tạo tên hàm Callback ngẫu nhiên độc lập
         const callbackName = "shopee_callback_" + Math.round(Math.random() * 100000);
         
-        // Khởi tạo hàm hứng dữ liệu trả về từ Apps Script
         window[callbackName] = function(data) {
-            // Tự dọn dẹp thẻ script thừa ngay khi nhận dữ liệu xong để tránh đơ nút bấm lần sau
+            // Tự động gỡ thẻ script ngay khi hứng dữ liệu thành công để tránh đơ nút
             const oldScript = document.getElementById(callbackName);
             if (oldScript) { oldScript.parentNode.removeChild(oldScript); }
             delete window[callbackName];
@@ -131,24 +97,26 @@
                 }
                 
                 let actionButtonsHtml = '';
-                
-                // Phân bổ nút bấm hiển thị theo tầng ưu tiên
-                if (data.link_xac_thuc_tai_day && data.link_xac_thuc_tai_day !== "Không có") {
+                let otpDisplayHtml = data.otp;
+
+                // LOGIC PHÂN TẦNG ƯU TIÊN HIỂN THỊ NÚT BẤM VÀ GIÁ TRỊ TRÊN MÀN HÌNH WEB
+                if (data.otp && data.otp !== "Không có") {
+                    // Trường hợp có OTP: Chỉ hiện nút copy OTP, ẩn các nút liên quan đến Link
+                    actionButtonsHtml += `
+                        <button class="copy-otp-btn" onclick="copyToClipboard('${data.otp}', 'Đã copy mã OTP ${data.otp} thành công!')">COPY OTP</button>
+                    `;
+                } else if (data.link_xac_thuc_tai_day && data.link_xac_thuc_tai_day !== "Không có") {
+                    // Trường hợp chỉ có Link (Link Shopee ngắn hoặc Link Sendgrid dài): Hiện nút Mở và Copy Link
+                    otpDisplayHtml = "Chỉ có link";
                     actionButtonsHtml += `
                         <a href="${data.link_xac_thuc_tai_day}" target="_blank" class="verify-btn">MỞ LINK</a>
                         <button class="copy-btn" onclick="copyToClipboard('${data.link_xac_thuc_tai_day}', 'Đã copy link xác thực thành công!')">COPY LINK</button>
                     `;
                 }
                 
-                if (data.otp && data.otp !== "Không có") {
-                    actionButtonsHtml += `
-                        <button class="copy-otp-btn" onclick="copyToClipboard('${data.otp}', 'Đã copy mã OTP ${data.otp} thành công!')">COPY OTP</button>
-                    `;
-                }
-                
                 resultBox.innerHTML = `
                     <div class="data-item"><span class="data-label">Email quét:</span> ${data.hide_email_tin}</div>
-                    <div class="data-item"><span class="data-label">Mã OTP:</span> <span style="color:#ee4d2d; font-weight:bold; font-size:18px;">${data.otp}</span></div>
+                    <div class="data-item"><span class="data-label">Kết quả mã số:</span> <div class="otp-display">${otpDisplayHtml}</div></div>
                     <div class="data-item"><span class="data-label">Thời gian nhận thư:</span> <span style="color:#d35400; font-weight:bold;">${displayTime}</span></div>
                     <div class="data-item"><span class="data-label">Đường dẫn xác thực:</span></div>
                     <div style="font-size:12px; color:#666; margin-bottom:10px; max-height:60px; overflow-y:auto; background:#eee; padding:8px; border-radius:6px; word-break:break-all;">${data.link_xac_thuc_tai_day}</div>
@@ -160,3 +128,33 @@
             } else {
                 resultBox.classList.add("status-error");
                 resultBox.innerHTML = `
+                    <div class="data-item" style="color:#e74c3c; font-weight:bold; text-align:center; margin-bottom:0;">${data.message}</div>
+                `;
+            }
+        };
+        
+        // Khởi chạy nhúng thẻ script tạo lệnh Fetch dữ liệu JSONP
+        const script = document.createElement('script');
+        script.id = callbackName;
+        script.src = `${webAppUrl}?hide=${encodeURIComponent(inputVal)}&callback=${callbackName}`;
+        document.body.appendChild(script);
+    }
+
+    // Hàm thực hiện lệnh copy dữ liệu nhanh
+    function copyToClipboard(text, successMessage) {
+        navigator.clipboard.writeText(text).then(() => {
+            alert(successMessage);
+        }).catch(() => {
+            const textarea = document.createElement("textarea");
+            textarea.value = text;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand("copy");
+            document.body.removeChild(textarea);
+            alert(successMessage);
+        });
+    }
+</script>
+
+</body>
+</html>
