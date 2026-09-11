@@ -64,6 +64,50 @@
         .btn-main:hover {
             background-color: #d73211;
         }
+        .btn-secondary {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 9px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            width: 100%;
+            font-size: 13px;
+            margin-bottom: 8px;
+        }
+        .btn-secondary:hover {
+            background-color: #2980b9;
+        }
+        .btn-check-all {
+            background-color: #27ae60;
+            color: white;
+            border: none;
+            padding: 9px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            width: 100%;
+            font-size: 13px;
+            margin-bottom: 10px;
+        }
+        .btn-check-all:hover {
+            background-color: #219653;
+        }
+        .btn-check-single {
+            background-color: #e67e22;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 11px;
+            float: right;
+        }
+        .btn-check-single:hover {
+            background-color: #d35400;
+        }
         .order-card {
             padding: 12px;
             border-radius: 8px;
@@ -109,9 +153,14 @@
 
     <!-- PHẦN 3: TIẾN ĐỘ THEO DÕI ĐƠN -->
     <div>
-        <h3 style="text-align: left; font-size: 16px; border-bottom: 2px solid #ee4d2d; padding-bottom: 5px;">📊 TIẾN ĐỘ THEO DÕI ĐƠN</h3>
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #ee4d2d; padding-bottom: 5px; margin-bottom: 10px;">
+            <h3 style="margin: 0; font-size: 16px; text-align: left;">📊 TIẾN ĐỘ THEO DÕI ĐƠN</h3>
+        </div>
+
+        <button class="btn-check-all" onclick="checkAllOrders()">⚡ Quét Tất Cả Đơn Chờ Giao (Check All)</button>
+        <button class="btn-secondary" onclick="loadOrdersFromSupabase()">🔄 Làm Mới Dữ Liệu Từ Supabase</button>
         
-        <input type="text" id="searchBox" placeholder="🔍 Tìm kiếm nhanh mã đơn hoặc tên sản phẩm..." onkeyup="filterOrders()" style="margin-top: 10px;">
+        <input type="text" id="searchBox" placeholder="🔍 Tìm kiếm nhanh mã đơn hoặc tên sản phẩm..." onkeyup="filterOrders()" style="margin-top: 5px;">
 
         <div id="orderListContainer">
             <div style="text-align: center; color: #888; padding: 15px;">Đang tải danh sách đơn...</div>
@@ -125,10 +174,12 @@
     const SUPABASE_ANON_KEY = "sb_publishable_LIeDI4UVn7MEo5vURP05hA_TM4h0vFd";
     const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+    const GAS_WEB_URL = "https://script.google.com/macros/s/AKfycbwk0RSNFUrzaU7nSlNgAgazt3BWUNR-meYBYvJcSkJIFxQe4XiDfGd3FsfcSTWzOLk/exec";
+
     let allOrdersData = [];
     let currentUsername = localStorage.getItem("shopee_logged_user") || "Cuong123";
 
-    // Hàm nạp đơn mới vào Supabase
+    // Hàm nạp đơn mới có kiểm tra trùng mã đơn hàng
     async function addNewOrder() {
         const orderCode = document.getElementById("inputOrderCode").value.trim();
         const productName = document.getElementById("inputProductName").value.trim();
@@ -139,6 +190,24 @@
             return;
         }
 
+        // Bước 1: Kiểm tra xem mã đơn hàng đã tồn tại trên Supabase chưa
+        const { data: existingOrders, error: checkError } = await _supabase
+            .from('shopee_orders')
+            .select('id, order_code')
+            .eq('username', currentUsername)
+            .eq('order_code', orderCode);
+
+        if (checkError) {
+            alert("Lỗi khi kiểm tra trùng đơn: " + checkError.message);
+            return;
+        }
+
+        if (existingOrders && existingOrders.length > 0) {
+            alert("⚠️ Trùng ID đơn hàng! Mã đơn '" + orderCode + "' đã tồn tại trong hệ thống.");
+            return;
+        }
+
+        // Bước 2: Nếu chưa trùng thì tiến hành thêm mới
         const { data, error } = await _supabase
             .from('shopee_orders')
             .insert([
@@ -200,11 +269,17 @@
 
             let priceFormatted = ord.price && ord.price > 0 ? ord.price.toLocaleString('vi-VN') + ' VNĐ' : '0 VNĐ';
 
+            let checkButton = '';
+            if (!isDelivered) {
+                checkButton = `<button class="btn-check-single" onclick="checkSingleOrder('${ord.id}', '${ord.order_code}', '${ord.email}')">🔍 Kiểm tra ngay</button>`;
+            }
+
             html += `
                 <div class="order-card" style="background: ${statusBg}; border-left: 4px solid ${statusColor};">
                     <div>
                         <span class="order-id">#${ord.order_code}</span> 
-                        <span style="font-size: 11px; padding: 2px 6px; border-radius: 4px; background: ${statusColor}; color: white; float: right; font-weight: bold;">${statusText}</span>
+                        ${checkButton}
+                        <span style="font-size: 11px; padding: 2px 6px; border-radius: 4px; background: ${statusColor}; color: white; float: right; font-weight: bold; margin-right: 5px;">${statusText}</span>
                     </div>
                     <div class="order-name" style="margin-top: 6px; font-size: 13px; color: #444;">📦 ${ord.product_name || 'Đơn hàng Shopee'}</div>
                     <div style="font-size: 12px; color: #555; margin-top: 2px;">💰 Thanh toán: <b style="color: #e74c3c;">${priceFormatted}</b></div>
@@ -215,6 +290,60 @@
         });
 
         container.innerHTML = html;
+    }
+
+    // Check All
+    function checkAllOrders() {
+        alert("Đang kích hoạt quét tất cả đơn chờ giao trên hệ thống...");
+        let callbackName = 'check_all_cb_' + Math.round(Math.random() * 100000);
+        
+        let scriptTag = document.createElement('script');
+        scriptTag.id = 'jsonpCheckAllTag';
+        scriptTag.src = `${GAS_WEB_URL}?action=check_all&callback=${callbackName}`;
+        
+        window[callbackName] = function(data) {
+            document.getElementById('jsonpCheckAllTag').remove();
+            delete window[callbackName];
+            
+            alert("Đã quét xong toàn bộ đơn! Đang cập nhật lại giao diện...");
+            loadOrdersFromSupabase();
+        };
+
+        scriptTag.onerror = function() {
+            alert("Lỗi kết nối đến Google Apps Script.");
+            delete window[callbackName];
+        };
+
+        document.body.appendChild(scriptTag);
+    }
+
+    // Check Single
+    function checkSingleOrder(id, orderCode, email) {
+        if (!email) {
+            alert("Đơn hàng này không có email!");
+            return;
+        }
+
+        let callbackName = 'check_single_' + Math.round(Math.random() * 100000);
+        
+        let scriptTag = document.createElement('script');
+        scriptTag.id = 'jsonpCheckTag';
+        scriptTag.src = `${GAS_WEB_URL}?hide=${encodeURIComponent(email)}&check_id=${id}&check_code=${encodeURIComponent(orderCode)}&callback=${callbackName}`;
+        
+        window[callbackName] = function(data) {
+            document.getElementById('jsonpCheckTag').remove();
+            delete window[callbackName];
+            
+            alert("Đã quét xong đơn này! Đang cập nhật lại giao diện...");
+            loadOrdersFromSupabase();
+        };
+
+        scriptTag.onerror = function() {
+            alert("Lỗi kết nối đến Google Apps Script.");
+            delete window[callbackName];
+        };
+
+        document.body.appendChild(scriptTag);
     }
 
     // Tìm kiếm nhanh đơn hàng
@@ -283,7 +412,7 @@
 
         let scriptTag = document.createElement('script');
         scriptTag.id = 'jsonpScriptTag';
-        scriptTag.src = `https://script.google.com/macros/s/AKfycbwk0RSNFUrzaU7nSlNgAgazt3BWUNR-meYBYvJcSkJIFxQe4XiDfGd3FsfcSTWzOLk/exec?hide=${encodeURIComponent(val)}&callback=${callbackName}`;
+        scriptTag.src = `${GAS_WEB_URL}?hide=${encodeURIComponent(val)}&callback=${callbackName}`;
         
         scriptTag.onerror = function() {
             resultDiv.innerHTML = `<span style="color: #c0392b;">❌ Lỗi kết nối đến máy chủ Google Apps Script.</span>`;
@@ -293,7 +422,11 @@
         document.body.appendChild(scriptTag);
     }
 
+    // Tải lần đầu khi mở trang
     loadOrdersFromSupabase();
+
+    // Tự động làm mới dữ liệu từ Supabase mỗi 10 giây
+    setInterval(loadOrdersFromSupabase, 10000);
 </script>
 
 </body>
