@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hệ Thống Shopee & Quản Lý Đơn Hàng</title>
+    <title>Hệ Thống Shopee & Quản Lý Đơn Hàng Riêng Biệt</title>
     <!-- Thư viện Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
@@ -12,11 +12,18 @@
         h2 { color: #ee4d2d; text-align: center; margin-top: 0; font-size: 20px; margin-bottom: 15px; text-transform: uppercase; }
         label { font-weight: 600; display: block; margin-bottom: 6px; color: #333; font-size: 14px; text-align: left; }
         .input-group { position: relative; margin-bottom: 15px; width: 100%; }
-        input[type="text"] { width: 100%; padding: 12px; border: 1.5px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 15px; -webkit-appearance: none; }
-        input[type="text"]:focus { border-color: #ee4d2d; outline: none; }
+        input[type="text"], input[type="password"] { width: 100%; padding: 12px; border: 1.5px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 15px; -webkit-appearance: none; }
+        input[type="text"]:focus, input[type="password"]:focus { border-color: #ee4d2d; outline: none; }
         button { width: 100%; padding: 13px; background-color: #ee4d2d; color: white; border: none; border-radius: 8px; font-size: 15px; font-weight: bold; cursor: pointer; text-transform: uppercase; -webkit-appearance: none; }
         button:active { background-color: #d73c1f; }
         button:disabled { background-color: #ccc; cursor: not-allowed; }
+        
+        /* CSS cho phần thành viên thủ công */
+        .auth-switch { text-align: center; margin-top: 12px; font-size: 13px; color: #666; }
+        .auth-switch span { color: #ee4d2d; font-weight: bold; cursor: pointer; }
+        .logout-btn { background-color: #e74c3c; width: auto; padding: 6px 12px; font-size: 12px; text-transform: none; float: right; }
+        .logout-btn:active { background-color: #c0392b; }
+
         .result-box { margin-top: 15px; padding: 12px; border-radius: 8px; background-color: #fafafa; border: 1px solid #e6e6e6; display: none; font-size: 14px; }
         .status-success { border-left: 5px solid #2ecc71; }
         .status-error { border-left: 5px solid #e74c3c; }
@@ -30,42 +37,26 @@
         .copy-otp-btn { background-color: #e67e22; }
         .otp-display { font-size: 22px; font-weight: bold; color: #ee4d2d; margin: 3px 0; text-align: center; }
         
-        /* CSS cho danh sách đơn hàng & Tìm kiếm & More */
+        /* CSS danh sách đơn hàng */
         .order-table-container { 
             margin-top: 10px; 
-            max-height: 250px; /* Chiều cao mặc định (gọn gàng) */
+            max-height: 250px; 
             overflow-y: auto; 
             border: 1.5px solid #eee; 
             border-radius: 8px; 
             padding: 8px; 
             background: #fff; 
-            transition: max-height 0.3s ease-in-out; /* Hiệu ứng mượt mà khi mở rộng */
+            transition: max-height 0.3s ease-in-out; 
         }
-        .order-table-container.expanded {
-            max-height: 600px; /* Khi bấm xem thêm sẽ mở rộng cao hơn */
-        }
+        .order-table-container.expanded { max-height: 600px; }
         .search-box { margin-bottom: 10px; }
         .search-box input { padding: 9px 12px; font-size: 13px; border: 1px solid #ccc; border-radius: 6px; }
         
-        /* Nút Xem Thêm / Thu Gọn */
         .toggle-more-btn {
-            background: none;
-            border: none;
-            color: #ee4d2d;
-            font-size: 13px;
-            font-weight: bold;
-            cursor: pointer;
-            width: 100%;
-            text-align: center;
-            padding: 8px 0;
-            margin-top: 5px;
-            text-transform: none;
-            display: none; /* Mặc định ẩn, chỉ hiện khi danh sách dài */
+            background: none; border: none; color: #ee4d2d; font-size: 13px; font-weight: bold; cursor: pointer;
+            width: 100%; text-align: center; padding: 8px 0; margin-top: 5px; text-transform: none; display: none;
         }
-        .toggle-more-btn:hover {
-            text-decoration: underline;
-            background-color: transparent;
-        }
+        .toggle-more-btn:hover { text-decoration: underline; background-color: transparent; }
 
         .order-card { padding: 10px; border-bottom: 1px solid #f0f0f0; font-size: 13px; text-align: left; display: flex; justify-content: space-between; align-items: flex-start; }
         .order-card:last-child { border-bottom: none; }
@@ -78,63 +69,93 @@
         .card-actions { display: flex; gap: 4px; flex-shrink: 0; }
         .edit-btn, .delete-btn { color: white; border: none; border-radius: 4px; width: 26px; height: 26px; font-size: 12px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; }
         .edit-btn { background-color: #3498db; }
-        .edit-btn:active { background-color: #2980b9; }
         .delete-btn { background-color: #ff4d4f; }
-        .delete-btn:active { background-color: #d9363e; }
     </style>
 </head>
 <body>
 
-<!-- KHỐI 1: QUÉT LINK & OTP -->
-<div class="container">
-    <h2>Shopee Link & OTP Fetcher</h2>
-    <label for="hideInput">Nhập tên hoặc địa chỉ Email:</label>
-    <div class="input-group">
-        <input type="text" id="hideInput" placeholder="Ví dụ: squints_cutlers.5a" inputmode="email">
-    </div>
-    <button id="fetchBtn" onclick="fetchVerificationLink()">Lấy Link Xác Thực / OTP</button>
+<!-- KHỐI 0: ĐĂNG NHẬP / ĐĂNG KÝ THÀNH VIÊN THỦ CÔNG -->
+<div class="container" id="authContainer">
+    <h2 id="authTitle">Đăng Nhập Thành Viên</h2>
     
-    <div id="loadingBox" class="result-box status-loading">Đang kết nối hộp thư và quét dữ liệu...</div>
-    <div id="resultBox" class="result-box"></div>
+    <label for="authUsername">Tên đăng nhập:</label>
+    <div class="input-group">
+        <input type="text" id="authUsername" placeholder="Nhập tên đăng nhập...">
+    </div>
+
+    <label for="authPassword">Mật khẩu:</label>
+    <div class="input-group">
+        <input type="password" id="authPassword" placeholder="Nhập mật khẩu...">
+    </div>
+
+    <button id="authSubmitBtn" onclick="handleAuthSubmit()">Đăng Nhập</button>
+    
+    <div class="auth-switch">
+        <span id="switchText" onclick="toggleAuthMode()">Chưa có tài khoản? Đăng ký ngay</span>
+    </div>
 </div>
 
-<!-- KHỐI 2: NẠP ĐƠN VÀ HIỂN THỊ TIẾN ĐỘ -->
-<div class="container">
-    <h2>Nạp Đơn & Theo Dõi</h2>
+<!-- CÁC KHỐI CHỨC NĂNG CHÍNH (Chỉ hiện khi đã đăng nhập) -->
+<div id="mainAppContent" style="display: none; width: 100%; max-width: 450px;">
     
-    <label for="orderCodeInput">Mã đơn hàng Shopee:</label>
-    <div class="input-group">
-        <input type="text" id="orderCodeInput" placeholder="Ví dụ: 260908FD8YK34N">
+    <!-- THÔNG TIN TÀI KHOẢN ĐANG ĐĂNG NHẬP -->
+    <div class="container" style="padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+        <span style="font-size: 13px; color: #555;">Xin chào, <b id="currentUsernameDisplay" style="color:#ee4d2d;"></b></span>
+        <button class="logout-btn" onclick="handleLogout()">Đăng xuất</button>
     </div>
 
-    <label for="productNameInput">Tên sản phẩm:</label>
-    <div class="input-group">
-        <input type="text" id="productNameInput" placeholder="Ví dụ: Áo khoác nam thể thao">
+    <!-- KHỐI 1: QUÉT LINK & OTP -->
+    <div class="container">
+        <h2>Shopee Link & OTP Fetcher</h2>
+        <label for="hideInput">Nhập tên hoặc địa chỉ Email:</label>
+        <div class="input-group">
+            <input type="text" id="hideInput" placeholder="Ví dụ: squints_cutlers.5a" inputmode="email">
+        </div>
+        <button id="fetchBtn" onclick="fetchVerificationLink()">Lấy Link Xác Thực / OTP</button>
+        
+        <div id="loadingBox" class="result-box status-loading">Đang kết nối hộp thư và quét dữ liệu...</div>
+        <div id="resultBox" class="result-box"></div>
     </div>
 
-    <label for="emailInput">Địa chỉ Email hòm thư:</label>
-    <div class="input-group">
-        <input type="text" id="emailInput" placeholder="Ví dụ: snowy.eidolon_2m@icloud.com" inputmode="email">
-    </div>
-    
-    <button id="saveOrderBtn" onclick="saveShopeeOrder()">Nạp Đơn Vào Hệ Thống</button>
-    
-    <div style="margin-top: 20px; font-weight: bold; font-size: 14px; text-align: left; color: #444; border-bottom: 2px solid #ee4d2d; padding-bottom: 5px; margin-bottom: 10px;">
-        📊 TIẾN ĐỘ THEO DÕI ĐƠN
+    <!-- KHỐI 2: NẠP ĐƠN VÀ HIỂN THỊ TIẾN ĐỘ -->
+    <div class="container">
+        <h2>Nạp Đơn & Theo Dõi</h2>
+        
+        <label for="orderCodeInput">Mã đơn hàng Shopee:</label>
+        <div class="input-group">
+            <input type="text" id="orderCodeInput" placeholder="Ví dụ: 260908FD8YK34N">
+        </div>
+
+        <label for="productNameInput">Tên sản phẩm:</label>
+        <div class="input-group">
+            <input type="text" id="productNameInput" placeholder="Ví dụ: Áo khoác nam thể thao">
+        </div>
+
+        <label for="emailInput">Địa chỉ Email hòm thư:</label>
+        <div class="input-group">
+            <input type="text" id="emailInput" placeholder="Ví dụ: snowy.eidolon_2m@icloud.com" inputmode="email">
+        </div>
+        
+        <button id="saveOrderBtn" onclick="saveShopeeOrder()">Nạp Đơn Vào Hệ Thống</button>
+        
+        <div style="margin-top: 20px; font-weight: bold; font-size: 14px; text-align: left; color: #444; border-bottom: 2px solid #ee4d2d; padding-bottom: 5px; margin-bottom: 10px;">
+            📊 TIẾN ĐỘ THEO DÕI ĐƠN CỦA BẠN
+        </div>
+
+        <!-- Ô TÌM KIẾM NHANH -->
+        <div class="search-box">
+            <input type="text" id="searchOrderInput" placeholder="🔍 Tìm kiếm nhanh mã đơn hoặc tên sản phẩm..." onkeyup="filterOrders()">
+        </div>
+        
+        <!-- KHUNG DANH SÁCH ĐƠN HÀNG -->
+        <div id="orderListContainer" class="order-table-container">
+            <div style="text-align: center; color: #888; padding: 15px; font-size: 13px;">Đang tải danh sách đơn...</div>
+        </div>
+
+        <!-- NÚT XEM THÊM / THU GỌN -->
+        <button id="toggleMoreBtn" class="toggle-more-btn" onclick="toggleExpandOrders()">▼ Xem thêm đơn hàng cũ hơn</button>
     </div>
 
-    <!-- Ô TÌM KIẾM NHANH -->
-    <div class="search-box">
-        <input type="text" id="searchOrderInput" placeholder="🔍 Tìm kiếm nhanh mã đơn hoặc tên sản phẩm..." onkeyup="filterOrders()">
-    </div>
-    
-    <!-- KHUNG DANH SÁCH ĐƠN HÀNG -->
-    <div id="orderListContainer" class="order-table-container">
-        <div style="text-align: center; color: #888; padding: 15px; font-size: 13px;">Đang tải danh sách đơn...</div>
-    </div>
-
-    <!-- NÚT XEM THÊM / THU GỌN -->
-    <button id="toggleMoreBtn" class="toggle-more-btn" onclick="toggleExpandOrders()">▼ Xem thêm đơn hàng cũ hơn</button>
 </div>
 
 <script>
@@ -149,12 +170,108 @@
 
     let allOrders = [];
     let isExpanded = false;
+    let isRegisterMode = false;
 
     window.onload = function() {
-        loadOrdersFromSupabase();
+        const savedUser = localStorage.getItem("shopee_logged_user");
+        if (savedUser) {
+            showMainApp(savedUser);
+        } else {
+            showAuthBox();
+        }
     };
 
-    // Hàm 1: Quét Link/OTP (Khối trên)
+    function toggleAuthMode() {
+        isRegisterMode = !isRegisterMode;
+        const title = document.getElementById("authTitle");
+        const submitBtn = document.getElementById("authSubmitBtn");
+        const switchText = document.getElementById("switchText");
+
+        if (isRegisterMode) {
+            title.innerText = "Đăng Ký Tài Khoản Mới";
+            submitBtn.innerText = "Đăng Ký";
+            switchText.innerText = "Đã có tài khoản? Đăng nhập ngay";
+        } else {
+            title.innerText = "Đăng Nhập Thành Viên";
+            submitBtn.innerText = "Đăng Nhập";
+            switchText.innerText = "Chưa có tài khoản? Đăng ký ngay";
+        }
+    }
+
+    async function handleAuthSubmit() {
+        const username = document.getElementById("authUsername").value.trim();
+        const password = document.getElementById("authPassword").value.trim();
+        const submitBtn = document.getElementById("authSubmitBtn");
+
+        if (!username || !password) {
+            alert("Vui lòng nhập đầy đủ Tên đăng nhập và Mật khẩu!");
+            return;
+        }
+
+        submitBtn.disabled = true;
+
+        if (isRegisterMode) {
+            const { data: existingUser } = await _supabase
+                .from('members')
+                .select('*')
+                .eq('username', username)
+                .maybeSingle();
+
+            if (existingUser) {
+                alert("Tên đăng nhập này đã tồn tại, vui lòng chọn tên khác!");
+                submitBtn.disabled = false;
+                return;
+            }
+
+            const { error } = await _supabase
+                .from('members')
+                .insert([{ username: username, password: password }]);
+
+            submitBtn.disabled = false;
+            if (error) {
+                alert("Đăng ký thất bại: " + error.message);
+            } else {
+                alert("Đăng ký thành công! Hãy đăng nhập vào tài khoản của bạn.");
+                toggleAuthMode();
+            }
+        } else {
+            const { data: user, error } = await _supabase
+                .from('members')
+                .select('*')
+                .eq('username', username)
+                .eq('password', password)
+                .maybeSingle();
+
+            submitBtn.disabled = false;
+
+            if (error || !user) {
+                alert("Sai tên đăng nhập hoặc mật khẩu!");
+            } else {
+                localStorage.setItem("shopee_logged_user", username);
+                showMainApp(username);
+            }
+        }
+    }
+
+    function handleLogout() {
+        localStorage.removeItem("shopee_logged_user");
+        document.getElementById("authUsername").value = "";
+        document.getElementById("authPassword").value = "";
+        showAuthBox();
+    }
+
+    function showMainApp(username) {
+        document.getElementById("authContainer").style.display = "none";
+        document.getElementById("mainAppContent").style.display = "block";
+        document.getElementById("currentUsernameDisplay").innerText = username;
+        loadOrdersFromSupabase();
+    }
+
+    function showAuthBox() {
+        document.getElementById("authContainer").style.display = "block";
+        document.getElementById("mainAppContent").style.display = "none";
+    }
+
     function fetchVerificationLink() {
         let inputVal = document.getElementById("hideInput").value.trim();
         const fetchBtn = document.getElementById("fetchBtn");
@@ -220,12 +337,13 @@
         document.body.appendChild(script);
     }
 
-    // Hàm 2: Nạp đơn vào Supabase (Khối dưới)
+    // Nạp đơn (Đính kèm username của người đang đăng nhập)
     async function saveShopeeOrder() {
         let orderCode = document.getElementById("orderCodeInput").value.trim();
         let productName = document.getElementById("productNameInput").value.trim();
         let emailInput = document.getElementById("emailInput").value.trim();
         const saveBtn = document.getElementById("saveOrderBtn");
+        const currentUsername = localStorage.getItem("shopee_logged_user");
         
         if (!orderCode || !productName || !emailInput) {
             alert("Vui lòng nhập đầy đủ Mã đơn hàng, Tên sản phẩm và Email!");
@@ -242,7 +360,8 @@
                     order_code: orderCode, 
                     product_name: productName,
                     email: emailInput, 
-                    status: 'Đang chờ giao' 
+                    status: 'Đang chờ giao',
+                    username: currentUsername // Lưu gán vào tài khoản hiện tại
                 }
             ]);
 
@@ -261,13 +380,15 @@
         }
     }
 
-    // Hàm 3: Tải danh sách đơn hàng từ Supabase
+    // Chỉ tải các đơn hàng thuộc về username đang đăng nhập
     async function loadOrdersFromSupabase() {
         const container = document.getElementById("orderListContainer");
+        const currentUsername = localStorage.getItem("shopee_logged_user");
         
         const { data, error } = await _supabase
             .from('shopee_orders')
             .select('*')
+            .eq('username', currentUsername) // Lọc riêng theo tài khoản
             .order('created_at', { ascending: false });
 
         if (error) {
@@ -279,18 +400,16 @@
         renderOrders(allOrders);
     }
 
-    // Hàm hiển thị danh sách ra màn hình
     function renderOrders(ordersToRender) {
         const container = document.getElementById("orderListContainer");
         const toggleBtn = document.getElementById("toggleMoreBtn");
 
         if (!ordersToRender || ordersToRender.length === 0) {
-            container.innerHTML = `<div style="text-align: center; color: #888; padding: 15px; font-size: 13px;">Không tìm thấy đơn hàng phù hợp</div>`;
+            container.innerHTML = `<div style="text-align: center; color: #888; padding: 15px; font-size: 13px;">Chưa có đơn hàng nào của riêng bạn</div>`;
             toggleBtn.style.display = "none";
             return;
         }
 
-        // Tự động ẩn hiện nút "Xem thêm" dựa vào tổng số lượng đơn (ví dụ trên 4 đơn thì hiện nút)
         if (ordersToRender.length > 4 && !document.getElementById("searchOrderInput").value.trim()) {
             toggleBtn.style.display = "block";
         } else {
@@ -320,7 +439,6 @@
         container.innerHTML = html;
     }
 
-    // Hàm bấm nút Xem thêm / Thu gọn khung đơn hàng
     function toggleExpandOrders() {
         const container = document.getElementById("orderListContainer");
         const toggleBtn = document.getElementById("toggleMoreBtn");
@@ -335,7 +453,6 @@
         }
     }
 
-    // Hàm lọc tìm kiếm đơn hàng ngay lập tức khi gõ chữ
     function filterOrders() {
         let keyword = document.getElementById("searchOrderInput").value.toLowerCase().trim();
         const toggleBtn = document.getElementById("toggleMoreBtn");
@@ -345,7 +462,6 @@
             return;
         }
 
-        // Khi đang tìm kiếm thì tạm ẩn nút xem thêm để kết quả tìm kiếm rõ ràng
         toggleBtn.style.display = "none";
 
         let filtered = allOrders.filter(order => 
@@ -382,7 +498,6 @@
         container.innerHTML = html;
     }
 
-    // Hàm 4: Chỉnh sửa thông tin đơn hàng
     async function editOrder(id, oldCode, oldName, oldEmail) {
         let newCode = prompt("Nhập mã đơn hàng mới:", oldCode);
         if (newCode === null) return;
@@ -416,7 +531,6 @@
         }
     }
 
-    // Hàm 5: Xóa đơn hàng theo ID
     async function deleteOrder(id) {
         if (!confirm("Bạn có chắc chắn muốn xóa đơn hàng này khỏi danh sách không?")) {
             return;
